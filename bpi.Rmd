@@ -1,0 +1,417 @@
+---
+title: "BPI: Descriptive analyses"
+author: "Peter Kamerman, Tory Madden, and Antonia Wadley"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+    html_document:
+        theme: yeti
+        highlight: pygments
+        df_print: paged
+        toc: true
+        toc_depth: 4
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(stringr)
+library(glue)
+library(ggplot2)
+library(purrr)
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      fig.width = 8,
+                      fig.height = 8)
+```
+
+## Import data
+```{r data_import, results = 'hide'}
+# Read in bpi data
+bpi <- readr::read_rds('./data/bpi.rds') %>%
+    arrange(ID) %>%
+    mutate(ID = stringr::str_to_lower(ID))
+
+# Read in demographics.rds for site, group, and sex info
+foo <- readr::read_rds('./data/demographics.rds') %>%
+    select(ID, Site, Group, Sex) %>%
+    rename(ID2 = ID) %>%
+    arrange(ID2)
+
+# Join the two datasets 
+bpi <- foo %>%
+    bind_cols(bpi) %>%
+    rowwise() %>%
+    mutate(ID_match = grepl(pattern = ID2,
+                            x = ID))
+
+# Check for mismatches from join
+nrow(filter(bpi, ID_match == FALSE))
+
+# Clean-up columns
+bpi <- bpi %>%
+    select(-ID,
+           -ID_match) %>%
+    rename(ID = ID2)
+```
+
+## Quick look 
+```{r quick_look}
+glimpse(bpi)
+head(bpi)
+tail(bpi)
+```
+
+## Pain severity scale (PSS)
+### Clean data
+```{r pss_clean}
+# Generate data
+bpi_pss <- bpi %>%
+    # Select columns
+    select(ID, Site, Group, Sex, 
+           starts_with('Worst'), starts_with('Least'),
+           starts_with('Avg'), starts_with('Now')) %>%
+    # Convert to long format
+    tidyr::gather(key = pain_question,
+                  value = pain_intensity,
+                  -ID, - Site, - Group, -Sex) %>%
+    # Seperate pain_question into constituent parts
+    tidyr::separate(col = pain_question, 
+                    into = c('pain_question', 'time_point')) %>%
+    # Calculate PSS
+    group_by(ID, time_point) %>%
+    mutate(PSS = round(mean(pain_intensity, na.rm = TRUE), 1),
+           PSS = ifelse(is.nan(PSS),
+                        yes = NA,
+                        no = PSS)) %>%
+    # Order the time points
+    ungroup() %>%
+    mutate(time_point = factor(time_point,
+                               levels = c('BL', 'Wk4', 'Wk8', 
+                                          'Wk12', 'Wk24', 'Wk48'),
+                               ordered = TRUE))
+```
+
+### Plots
+```{r pss_plots}
+# Create spaghetti plot using all PSS data, to allow for faceting.
+# Change time point to numerical so as to space appropriately in graph
+# First temporarily convert values from factor to character
+bpi_pss <- mutate(bpi_pss,
+                  time_point = as.character(time_point))
+
+# Replace values
+bpi_pss[bpi_pss=="BL"]<- "BL0"
+
+# Make a copy of bpi_pss 
+bpi_pss2 <- bpi_pss
+
+# Separate after 2 characters
+bpi_pss <- tidyr::separate(data = bpi_pss,
+                           col = time_point,
+                           into = c('Text', 'Week'), 2)
+
+# Convert back into numeric form
+bpi_pss <- mutate (bpi_pss,
+                   Week = as.numeric(Week))
+```
+
+#### Spaghetti plots
+```{r pss_spag_plots}
+# Create spaghetti plot
+# Try using geom.plot, via tutorial at
+# https://stats.idre.ucla.edu/r/faq/how-can-i-visualize-longitudinal-data-in-ggplot2/
+
+# Colour by site
+ggplot(data = bpi_pss) + 
+    aes(x = Week, 
+        y = PSS, 
+        group = ID, 
+        colour = Site) + 
+    geom_line()+
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+
+# Colour by individual, facet by site
+ggplot(data = bpi_pss) +
+    aes(x = Week,
+        y = PSS,
+        colour = ID) +
+    geom_line() +
+    facet_grid(Site ~ .) +
+    labs(title = 'Pain Severity Scale', 
+         subtitle = 'Faceted by study site, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+
+# Facet by study site and gender, colour by ID
+ggplot(data = bpi_pss) +
+    aes(x = Week,
+        y = PSS,
+        colour = ID) +
+    geom_line() +
+    facet_grid(Site ~ Sex) +
+    labs(title = 'Pain Severity Scale', 
+         subtitle = 'Faceted by study site, coloured by ID')+ 
+    theme(legend.position = 'none')+
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+
+# Facet by ID and U1 only
+bpi_pss_U1 <- bpi_pss %>%
+    filter(Site == "u1")
+
+ggplot(data = bpi_pss_U1) +
+    aes(x = Week,
+        y = PSS,
+        colour = ID) +
+    geom_line() +
+    facet_wrap(facet = ~ID) +
+    labs(title = 'Pain Severity Scale', 
+         subtitle = 'U1 site only; faceted by ID')+ 
+    theme(legend.position = 'none')+
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+
+# Facet by individual at each site
+## U1
+pss_spagID <- bpi_pss %>%
+    select(-pain_question, -pain_intensity) %>%
+    unique(.) %>%
+    group_by(Site, Group) %>%
+    nest() %>%
+    mutate(Number = row_number()) %>%
+    unnest() %>%
+    nest(-Number) %>%
+    mutate(plot = map(data, 
+                      ~ggplot(data = .x) +
+                          aes(x = Week,
+                              y = PSS,
+                              colour = Sex) +
+                          geom_line() +
+                          geom_point(size = 2) +
+                          labs(title = 'Pain severity scale',
+                               subtitle = glue('Site: {str_to_title(unique(.x$Site))} ; Group: {.x$Group}')) +
+                          scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                                             limits = c(0, 48)) +
+                          scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10),
+                                             limits = c(0, 10)) +
+                          facet_wrap(facets = ~ID, ncol = 4) +
+                          theme(legend.position = 'top')))
+
+pss_spagID$plot
+```
+
+#### Summary plots
+```{r pss_summary_plots}
+## PSS: Faceted by study site, coloured by group
+ggplot(data = bpi_pss2) +
+    aes(x = time_point,
+        y = PSS,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ .) +
+    labs(title = 'Pain Severity Scale (PSS)', 
+         subtitle = 'Faceted by study site, coloured by group')
+
+## PSS: Faceted by study group, coloured by sex'
+ggplot(data = bpi_pss2) +
+    aes(x = time_point,
+        y = PSS,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Group ~ .) +
+    labs(title = 'Pain Severity Scale (PSS)', 
+         subtitle = 'Faceted by study group, coloured by sex')
+
+## PSS: Faceted by study site and group, coloured by sex
+ggplot(data = bpi_pss2) +
+    aes(x = time_point,
+        y = PSS,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ Group) +
+    labs(title = 'Pain Severity Scale (PSS)', 
+         subtitle = 'Faceted by study site and group, coloured by sex')
+
+## PSS: Women only
+ggplot(data = filter(bpi_pss2, Sex == 'female')) +
+    aes(x = time_point,
+        y = PSS) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Pain Severity Scale (PSS)',
+         subtitle = 'Women only')
+
+## PSS: Women only (excluding U1)
+ggplot(data = filter(bpi_pss2, Sex == 'female' & Site != 'u1')) +
+    aes(x = time_point,
+        y = PSS) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Pain Severity Scale (PSS)', 
+         subtitle = 'Women only (excluding u1)')
+```
+
+## Pain interference scale (PIS)
+### Clean data
+```{r pis_clean}
+# Generate data
+bpi_pis <- bpi %>%
+    # Select columns
+    select(ID, Site, Group, Sex,
+           starts_with('Activ'), starts_with('Mood'),
+           starts_with('Walking'), starts_with('Work'),
+           starts_with('Rel'), starts_with('Sleep'),
+           starts_with('Enjoy')) %>%
+    select(-contains('Relief')) %>%
+    # Convert to long format
+    tidyr::gather(key = interference_question,
+                  value = interference_intensity,
+                  -ID, -Site, -Group, -Sex) %>%
+    # Separate pain_question into constituent parts
+    tidyr::separate(col = interference_question, 
+                    into = c('interference_question', 'time_point')) %>%
+    # Calculate PIS
+    group_by(ID, time_point) %>%
+    mutate(PIS = round(mean(interference_intensity, na.rm = TRUE), 1),
+           PIS = ifelse(is.nan(PIS),
+                        yes = NA,
+                        no = PIS)) %>%
+    # Order the time points
+    ungroup() %>%
+    mutate(time_point = factor(time_point,
+                               levels = c('BL', 'Wk4', 'Wk8', 
+                                          'Wk12', 'Wk24', 'Wk48'),
+                               ordered = TRUE))
+```
+
+### Plots
+```{r pis_plots}
+# First temporarily convert values from factor to character
+bpi_pis <- mutate (bpi_pis,
+                   time_point = as.character(time_point))
+
+# Replace values
+bpi_pis[bpi_pis=="BL"]<- "BL0"
+
+# Make a copy of bpi_pis
+bpi_pis2 <- bpi_pis
+
+# Separate after 2 characters
+bpi_pis <- tidyr::separate(data = bpi_pis,
+                           col = time_point,
+                           into = c('Text', 'Week'), 2)
+
+# Convert back into numeric form
+bpi_pis <- mutate (bpi_pis,
+                   Week = as.numeric(Week))
+
+```
+
+#### Spaghetti plots
+```{r pis_spag_plots}
+# Colour by site
+ggplot(data = bpi_pis, aes(x = Week, y = PIS, group = ID, colour = Site))+ 
+    geom_line()+
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+
+# Colour by individual, facet by site
+ggplot(data = bpi_pis) +
+    aes(x = Week,
+        y = PIS,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Site ~ .) +
+    labs(title = 'Pain Interference Scale', 
+         subtitle = 'Faceted by study site, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+
+# Facet by study site and gender, colour by ID
+ggplot(data = bpi_pis) +
+    aes(x = Week,
+        y = PIS,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Site ~ Sex) +
+    labs(title = 'Pain Interference Scale', 
+         subtitle = 'Faceted by study site, coloured by ID')+ 
+    theme(legend.position = 'none')+
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,2,4,6,8,10))
+```
+
+#### Summary plots
+```{r pis_summary_plots}
+## PIS: Faceted by study site, coloured by group
+ggplot(data = bpi_pis2) +
+    aes(x = time_point,
+        y = PIS,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ .) +
+    labs(title = 'Pain Interference Scale (PIS)',
+         subtitle = 'Faceted by study site, coloured by group')
+
+## PIS: Faceted by study group, coloured by sex'
+ggplot(data = bpi_pis2) +
+    aes(x = time_point,
+        y = PIS,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Group ~ .) +
+    labs(title = 'Pain Interference Scale (PIS)',
+         subtitle = 'Faceted by study group, coloured by sex')
+
+## PIS: Faceted by study site and group, coloured by sex
+ggplot(data = bpi_pis2) +
+    aes(x = time_point,
+        y = PIS,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ Group) +
+    labs(title = 'Pain Interference Scale (PIS)', 
+         subtitle = 'Faceted by study site and group, coloured by sex')
+
+## PIS: Women only
+ggplot(data = filter(bpi_pis2, Sex == 'female')) +
+    aes(x = time_point,
+        y = PIS) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Pain Interference Scale (PIS)', 
+         subtitle = 'Women only')
+
+## PIS: Women only (excluding U1)
+ggplot(data = filter(bpi_pis2, Sex == 'female' & Site != 'u1')) +
+    aes(x = time_point,
+        y = PIS) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Pain Interference Scale (PIS): Women only',
+         subtitle = 'Excluding U1')
+```
+
+## Session information
+```{r session_info}
+sessionInfo()
+```

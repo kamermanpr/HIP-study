@@ -1,0 +1,286 @@
+---
+title: "Demographics: Descriptive analyses"
+author: "Peter Kamerman and Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: 
+    html_document:
+        theme: yeti
+        highlight: pygments
+        df_print: paged
+        toc: true
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(dplyr)
+library(ggplot2)
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      fig.width = 8,
+                      fig.height = 8)
+```
+
+## Import data
+```{r import_data}
+# Get data
+demo <- readr::read_rds('./data/demographics.rds')
+```
+
+## Quick look
+```{r quick_look}
+glimpse(demo)
+head(demo)
+tail(demo)
+```
+
+## Sample size
+```{r sample_size}
+# Sample size by study site
+demo %>%
+    group_by(Site) %>%
+    summarise(count = n()) %>%
+    knitr::kable(., caption = 'Sample size by study site')
+
+# Sample size by study site and intervention group
+demo %>%
+    group_by(Site, Group) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'Sample size by intervention group at each study site')
+```
+
+## Sex
+```{r sex}
+# Sex by study site
+demo %>%
+    group_by(Site, Sex) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'Sex by study site')
+
+# Sex by study site and intervention group
+demo %>%
+    group_by(Site, Group, Sex) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'Sex by intervention group at each study site')
+```
+
+## Age
+```{r age}
+# Age by study site
+demo %>%
+    group_by(Site) %>%
+    summarise(mean = round(mean(Age), 1),
+              sd = round(sd(Age), 1),
+              range = paste0(round(min(Age), 2), ' - ', 
+                             round(max(Age), 2))) %>%
+    knitr::kable(., caption = 'Age (years) by study site')
+
+# Age by study site and intervention group
+demo %>%
+    group_by(Site, Group) %>%
+    summarise(mean = round(mean(Age), 1),
+              sd = round(sd(Age), 1),
+              range = paste0(round(min(Age), 2), ' - ', 
+                             round(max(Age), 2))) %>%
+    knitr::kable(., caption = 'Age (years) by intervention group at each study site')
+
+# Plot
+## Age plotted according to study site and intervention group
+ggplot(data = demo) +
+    aes(y = Age,
+        x = Site,
+        colour = Group,
+        fill = Group) +
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Age in years',
+         subtitle = 'According to study site and intervention group')
+```
+
+## First recorded CD4
+```{r first_cd4}
+# First CD4 by study site
+demo %>%
+    group_by(Site) %>%
+    summarise(median = round(median(CD4, na.rm = TRUE)),
+              IQR = paste0(round(quantile(CD4, prob = 0.25, na.rm = TRUE)), ' - ', 
+                           round(quantile(CD4, prob = 0.75, na.rm = TRUE)))) %>%
+    knitr::kable(., caption = 'First recorded CD4 (cells/ul) by study site')
+
+# First CD4 by study site and intervention group
+demo %>%
+    group_by(Site, Group) %>%
+    summarise(median = round(median(CD4, na.rm = TRUE)),
+              IQR = paste0(round(quantile(CD4, prob = 0.25, na.rm = TRUE)), ' - ', 
+                           round(quantile(CD4, prob = 0.75, na.rm = TRUE)))) %>%
+    knitr::kable(., caption = 'First recorded CD4 (cells/ul) by intervention group at each study site')
+
+# Plot
+## First CD4 plotted according to study site and intervention group
+ggplot(data = demo) +
+    aes(y = CD4,
+        x = Site,
+        colour = Group,
+        fill = Group) +
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'First recorded CD4 (cells/ul)',
+         subtitle = 'According to study site and intervention group')
+```
+
+## Latest CD4
+```{r latest_cd4}
+# Latest CD4 by study site
+demo %>%
+    group_by(Site) %>%
+    summarise(median = round(median(CD4_recent, na.rm = TRUE)),
+              IQR = paste0(round(quantile(CD4_recent, prob = 0.25, na.rm = TRUE)), ' - ', 
+                           round(quantile(CD4_recent, prob = 0.75, na.rm = TRUE)))) %>%
+    knitr::kable(., caption = 'Latest recorded CD4 (cells/ul) by study site')
+
+# Latest CD4 by study site and intervention group
+demo %>%
+    group_by(Site, Group) %>%
+    summarise(median = round(median(CD4_recent, na.rm = TRUE)),
+              IQR = paste0(round(quantile(CD4_recent, prob = 0.25, na.rm = TRUE)), ' - ', 
+                           round(quantile(CD4_recent, prob = 0.75, na.rm = TRUE)))) %>%
+    knitr::kable(., caption = 'Latest recorded CD4 (cells/ul) by group at each study site')
+
+# Plot
+## First CD4 plotted according to study site and intervention group
+ggplot(data = demo) +
+    aes(y = CD4_recent,
+        x = Site,
+        colour = Group,
+        fill = Group) +
+    geom_boxplot(alpha = 0.6) +
+    geom_point()
+    labs(title = 'Latest recorded CD4 (cells/ul)',
+         subtitle = 'According to study site and intervention group')
+```
+
+## Occupation
+```{r occupation}
+# Occupation by study site
+demo %>%
+    group_by(Site, Occupation) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'Occupation by study site')
+
+# Occupation by study site and intervention group
+demo %>%
+    group_by(Site, Group, Occupation) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'Occupation by intervention group at each study site')
+```
+
+## SOS health literacy
+- _lhl:_ low health literacy  
+- _hl:_ health literate  
+```{r health_literacy}
+# Health literacy by study site
+demo %>%
+    group_by(Site, SOS_mnemonic) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'SOS health literacy by study site')
+
+# Health literacy by study site and intervention group
+demo %>%
+    group_by(Site, Group, SOS_mnemonic) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'SOS health literacy by intervention group at each study site')
+```
+
+## Years of education
+```{r education}
+# Education by study site
+## U1
+demo %>%
+    filter(Site == 'u1') %>%
+    group_by(Site, Years_education) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'U1: Years of education')
+
+## R1
+demo %>%
+    filter(Site == 'r1') %>%
+    group_by(Site, Years_education) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'R1: Years of education')
+
+## U2
+demo %>%
+    filter(Site == 'u2') %>%
+    group_by(Site, Years_education) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'U2: Years of education')
+
+## R2
+demo %>%
+    filter(Site == 'r2') %>%
+    group_by(Site, Years_education) %>%
+    summarise(count = n()) %>%
+    group_by(Site) %>%
+    mutate(sum = sum(count)) %>%
+    mutate(percent = round(count / sum * 100, 1)) %>%
+    select(-sum) %>%
+    knitr::kable(., caption = 'R2: Years of education')
+
+# Plot
+## Years of education plotted according to study site
+ggplot(data = demo) +
+    aes(x = Years_education,
+        fill = Site) +
+    geom_bar() +
+    facet_grid(Site ~ .) +
+    labs(title = 'Years of education', 
+         substitle = 'Faceted by study site') +
+    theme(legend.position = 'none')
+```
+
+## Session information
+```{r session_info}
+sessionInfo()
+```

@@ -1,0 +1,85 @@
+---
+title: "BPI: Factor analysis"
+author: "Peter Kamerman, Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: 
+    html_document:
+        theme: yeti
+        highlight: pygments
+        df_print: paged
+        toc: true
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(dplyr)
+library(psych)
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      fig.width = 8,
+                      fig.height = 8)
+```
+
+## Import data
+```{r import_data}
+# Get data
+bpi_fac <- readr::read_rds('./data/bpi_factor_analysis.rds')
+
+# Clean
+bpi_fac <- bpi_fac %>%
+    # Remove unneeded columns
+    select(-Pain_Pres_BL,
+           -Rx_BL,
+           -Relief_BL) %>%
+    # Convert all numbers to integers
+    mutate_if(is.double, as.integer) %>% 
+    # Remove incomplete cases
+    filter(complete.cases(.))
+```
+
+## Quick look
+```{r quick_look}
+glimpse(bpi_fac)
+head(bpi_fac)
+tail(bpi_fac)
+describe(bpi_fac)
+```
+
+## Factor analysis
+```{r factor_analysis, warning = TRUE}
+# Scree plot to check whether 2-factor solution is optimal
+fa.parallel(x = cor(bpi_fac),
+            n.obs = 122,
+            fa = 'fa')
+
+# Factor analysis with 2-factor solution
+bpi_fa <- fa(r = cor(bpi_fac),
+             nfactors = 2,
+             n.obs = 122,
+             rotate = 'varimax')
+
+# Plot
+fa.plot(bpi_fa)
+```
+
+## Internal consistency
+```{r internal_consistency, warning = TRUE}
+# Correlation matrix
+lowerCor(bpi_fac)
+
+# Plot correlaton matrix
+cor.plot(cor(bpi_fac))
+
+# Generate alpha and drop-1 summary
+alpha(bpi_fac)
+```
+
+## Session information
+```{r session_info}
+sessionInfo()
+```

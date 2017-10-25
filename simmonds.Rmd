@@ -1,0 +1,185 @@
+---
+title: "Simmonds: Descriptive analyses"
+author: "Peter Kamerman, Tory Madden, and Antonia Wadley"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: 
+    html_document:
+        theme: yeti
+        highlight: pygments
+        df_print: paged
+        toc: true
+        toc_depth: 4
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(tidyr)
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      fig.width = 8,
+                      fig.height = 8)
+```
+
+## Import data
+```{r import_data, results = 'hide'}
+# Read in data
+simmonds <- readr::read_rds('./data/simmonds.rds') %>%
+    arrange(ID) %>%
+    mutate(ID = stringr::str_to_lower(ID))
+
+# For site and group info
+foo <- readr::read_rds('./data/demographics.rds') %>%
+    select(ID, Site, Group, Sex) %>%
+    rename(ID2 = ID) %>%
+    arrange(ID2)
+
+# Join the two datasets 
+simmonds <- foo %>%
+    bind_cols(simmonds) %>%
+    rowwise() %>%
+    mutate(ID_match = ifelse(ID2 == ID,
+                             yes = TRUE,
+                             no = FALSE))
+
+# Check for mismatches from join
+nrow(filter(simmonds, ID_match == FALSE))
+
+# Eliminate extra ID column
+simmonds <- simmonds %>%
+    select(-ID,
+           -ID_match) %>%
+    rename(ID = ID2)
+```
+
+## Quick look
+```{r quick_look}
+glimpse(simmonds)
+head(simmonds)
+tail(simmonds)
+```
+
+## Clean data
+### Select 6-minute walk test only
+```{r clean_data}
+# Filter out all measurement data except distance walked in 6 minutes
+simmonds <- select(.data = simmonds,
+                    ID, Site, Group, Sex,
+                    starts_with('Distance'))
+
+# Check
+head(simmonds)
+
+# Gather from wide format into long format
+simmonds_tot <- simmonds %>%
+    tidyr::gather(key = simmonds_question,
+                  value = simmonds_rating,
+                  -ID, - Site, - Group, -Sex)
+
+# Separate by date
+simmonds_tot <- simmonds_tot %>%    
+    separate(simmonds_question, 
+             c('question', 'time_point'), 
+             sep = '_')
+
+# Set levels for time_points        
+simmonds_tot <- simmonds_tot %>% mutate(time_point = factor(time_point,
+                                        levels = c('BL', 'Wk4', 'Wk8', 
+                                                   'Wk12', 'Wk24', 'Wk48'),
+                                        ordered = TRUE))
+
+# Create new column with time
+simmonds_tot <- simmonds_tot %>% 
+    mutate(Week = case_when(
+        stringr::str_detect(.$time_point, "Wk48")  ~ 48,
+        stringr::str_detect(.$time_point, "BL")  ~ 0,
+        stringr::str_detect(.$time_point, "Wk4$")  ~ 4,
+        stringr::str_detect(.$time_point, "Wk8")  ~ 8,
+        stringr::str_detect(.$time_point, "Wk12")  ~ 12,
+        stringr::str_detect(.$time_point, "Wk24")  ~ 24
+    ))
+```
+
+## Plots
+### Spaghetti plots
+```{r spag_plots}
+ggplot(data = simmonds_tot) +
+    aes(x = Week,
+        y = simmonds_rating,
+        group = ID,
+        colour = Sex) %>%
+    geom_line() +
+    facet_grid(Group ~ .) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes', 
+         subtitle = 'Faceted by study group, coloured by sex')
+
+ggplot(data = simmonds_tot) +
+    aes(x = Week,
+        y = simmonds_rating,
+        group = ID,
+        colour = Sex) %>%
+    geom_line() +
+    facet_grid(Site ~ .) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes', 
+         subtitle = 'Faceted by study site, coloured by sex')
+```
+
+### Summary plots
+```{r summary_plots}
+# Create plots for simmonds data
+ggplot(data = simmonds_tot) +
+    aes(x = as.factor(Week),
+        y = simmonds_rating,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ .) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes', 
+         subtitle = 'Faceted by study site, coloured by group')
+
+ggplot(data = simmonds_tot) +
+    aes(x = as.factor(Week),
+        y = simmonds_rating,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Group ~ .) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes', 
+         subtitle = 'Faceted by study group, coloured by sex')
+
+ggplot(data = simmonds_tot) +
+    aes(x = as.factor(Week),
+        y = simmonds_rating,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ Group) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes', 
+         subtitle = 'Faceted by study site and group, coloured by sex')
+
+ggplot(data = filter(simmonds_tot, Sex == 'female')) +
+    aes(x = as.factor(Week),
+        y = simmonds_rating) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes',
+         subtitle = 'Women only')
+
+ggplot(data = filter(simmonds_tot, Sex == 'female' & Site != 'u1')) +
+    aes(x = as.factor(Week),
+        y = simmonds_rating) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'Simmonds: distance(m) walked in 6 minutes', 
+         subtitle = 'Women only (excluding U1)')
+```
+
+## Session information
+```{r session_info}
+sessionInfo()
+```
