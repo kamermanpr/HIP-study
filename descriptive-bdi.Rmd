@@ -27,7 +27,7 @@ knitr::opts_chunk$set(warning = FALSE,
 ```
 
 ## Import data
-```{r import_data}
+```{r import_data, results = 'hide'}
 # Read in bdi data
 bdi <- readr::read_rds('./data/bdi.rds') %>%
     arrange(ID) %>%
