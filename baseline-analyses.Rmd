@@ -1,0 +1,1098 @@
+---
+title: "Analysis of baseline data"
+author: "Peter Kamerman and Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+    html_document:
+        theme: yeti
+        highlight: pygments
+        df_print: paged
+        toc: true
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(magrittr)
+library(tidyverse)
+library(reporttools) # for pairwise fisher's exact test
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      fig.width = 8,
+                      fig.height = 8)
+```
+
+## Import data
+```{r import_data}
+# Read in site and group info
+info <- read_rds('./data/demographics.rds') %>%
+    select(ID, Site, Group, Sex) %>%
+    mutate(ID = stringr::str_to_upper(ID))
+
+# Read in data files
+files <- list.files(path = './data/',
+                    pattern = '*.rds') %>%
+    # Remove unnessesary files
+    .[!. %in% c('demographics.rds', 'simmonds.rds', 'bpi_factor_analysis.rds')] %>%
+    # Add path
+    paste0('./data/', .)
+
+# Import files into a list   
+data <- map(.x = files,
+            ~ read_rds(path = .x))
+
+# Name items in the 'data'
+names(data) <- c('bdi', 'bpi', 'eq5d', 'se6')
+
+# Join to info 
+data %<>% 
+    map(.x = .,
+         ~ left_join(info, .x))
+
+# Import demographics
+demographics <- read_rds('./data/demographics.rds')
+
+# Clean-up environment
+rm(info, files)
+```
+
+## Quick look
+```{r quick_look}
+# Head
+map(.x = data,
+    ~ head(.x))
+head(demographics)
+```
+
+## Process data 
+```{r clean_data, results = 'hide'}
+# Select baseline data columns
+data %<>%
+    map(~ select(.x, 
+                 ID, Site, Group, contains('BL'))) %>%
+    # Add a urban/rural code
+    map(~ mutate(.x,
+                 Type = ifelse(Site == 'u1' | Site == 'u2',
+                               yes = 'urban',
+                               no = 'rural'))) %>%
+    # Reorder columns
+    map(~ select(.x,
+                 ID, Site, Type, Group, everything()))
+
+# Extract list to environment (what a cool function!)
+list2env(data, 
+         envir = .GlobalEnv)
+
+# Select relevant baseline demographics variables
+demographics %<>%
+    select(ID, Site, Group, Age, CD4_recent, 
+           SOS_mnemonic, Occupation, Years_education) %>%
+    # Add a urban/rural code
+    mutate(Type = ifelse(Site == 'u1' | Site == 'u2',
+                         yes = 'urban',
+                         no = 'rural')) %>%
+    # Reorder columns
+    select(ID, Site, Type, Group, everything())
+
+# Define comparison pairs for site
+pairs <- combn(x = c('r1', 'r2', 'u1', 'u2'), 
+               m = 2) %>%
+    t(.) %>%
+    as_data_frame(.) %>%
+    mutate(comparison = paste(V1, 'vs', V2))
+```
+
+## BPI: Pain severity scale
+### Process data
+```{r bdi_pss}
+# Calculate PSS
+bpi_pss <- bpi %>%
+    # Select columns
+    select(ID, Site, Type, 6:9) %>%
+    # Calculate PSS
+    mutate(PSS = rowMeans(.[4:7], na.rm = TRUE),
+           # Treat PSS as a discrete scale
+           PSS = as.integer(round(PSS)))
+```
+
+### Plots and analysis
+```{r pss_plots}
+# Plot: PSS by site
+ggplot(data = bpi_pss) +
+    aes(x = Site,
+        y = PSS) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'PSS score by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'PSS')
+
+# Hypothesis test: PSS by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(PSS ~ as.factor(Site), 
+                     data = bpi_pss)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+bpi_pss.ci <- bpi_pss %>%
+    select(ID, Site, PSS) %>%
+    spread(key = Site,
+           value = PSS) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = bpi_pss.ci[[pairs$V1[[i]]]],
+                          y = bpi_pss.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    arrange(p.value) %>%
+    knitr::kable(caption = 'Median of the difference in BPI-PSS score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+
+# PSS by urban/rural
+ggplot(data = bpi_pss) +
+    aes(x = Type,
+        y = PSS) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'PSS score by urban/rural',
+         x = 'Study site',
+         y = 'PSS')
+
+# Hypothesis test: PSS by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(PSS ~ as.factor(Type), 
+                    data = bpi_pss,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in BPI-PSS score (estimate) between urban and rural study sites')
+```
+
+****
+
+## BPI: Pain interference scale
+### Process data
+```{r bdi_pis}
+# Calculate PSS
+bpi_pis <- bpi %>%
+    # Select columns
+    select(ID, Site, Type, 12:18) %>%
+    # Calculate PSS
+    mutate(PIS = rowMeans(.[4:10], na.rm = TRUE),
+           # Treat PSS as a discrete scale
+           PIS = as.integer(round(PIS)))
+```
+
+### Plots and analysis
+```{r pis_plots}
+# Plot: PIS by site
+ggplot(data = bpi_pis) +
+    aes(x = Site,
+        y = PIS) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'PIS score by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'PIS')
+
+# Hypothesis test: PIS by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(PIS ~ as.factor(Site), 
+                     data = bpi_pis)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+bpi_pis.ci <- bpi_pis %>%
+    select(ID, Site, PIS) %>%
+    spread(key = Site,
+           value = PIS) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = bpi_pis.ci[[pairs$V1[[i]]]],
+                          y = bpi_pis.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    arrange(p.value) %>%
+    knitr::kable(caption = 'Median of the difference in BPI-PIS score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+
+# PSS by urban/rural
+ggplot(data = bpi_pis) +
+    aes(x = Type,
+        y = PIS) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'PIS score by urban/rural',
+         x = 'Study site',
+         y = 'PIS')
+
+# Hypothesis test: PSS by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(PIS ~ as.factor(Type), 
+                    data = bpi_pis,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in BPI-PIS score (estimate) between urban and rural study sites')
+```
+
+****
+
+## SE-6
+### Process data
+```{r se6}
+se6_mean <- se6 %>%
+    # Calculate mean score
+    mutate(Mean_score = rowMeans(.[5:10], na.rm = TRUE),
+           # Treat PSS as a discrete scale
+           Mean_score = as.integer(round(Mean_score)))
+```
+
+### Plots and analysis
+```{r se6_plots}
+# Plot: se6 by site
+ggplot(data = se6_mean) +
+    aes(x = Site,
+        y = Mean_score) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'SE-6 score by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'SE-6 score')
+
+# Hypothesis test: se6 by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(Mean_score ~ as.factor(Site), 
+                     data = se6_mean)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+se6_mean.ci <- se6_mean %>%
+    select(ID, Site, Mean_score) %>%
+    spread(key = Site,
+           value = Mean_score) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = se6_mean.ci[[pairs$V1[[i]]]],
+                          y = se6_mean.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    arrange(p.value) %>%
+    knitr::kable(caption = 'Median of the difference in SE-6 score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+
+# Plot: se6 by urban/rural
+ggplot(data = se6_mean) +
+    aes(x = Type,
+        y = Mean_score) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'SE-6 score by urban/rural',
+         x = 'Study site',
+         y = 'SE-6 score')
+
+# Hypothesis test: se6 by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(Mean_score ~ as.factor(Type), 
+                    data = se6_mean,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in SE-6 score (estimate) between urban and rural study sites')
+```
+
+****
+
+## EQ5D VAS
+### Process data
+```{r eq5d}
+eq5d_vas <- eq5d %>%
+    # Select columns
+    select(ID, Site, Type, SOH_BL) %>%
+    # Rename column
+    rename(VAS_score = SOH_BL)
+```
+
+### Plots and analysis
+```{r eq5d_plots}
+# Plot: EQ5D VAS by site
+ggplot(data = eq5d_vas) +
+    aes(x = Site,
+        y = VAS_score) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    labs(title = 'EQ5D VAS score by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'EQ5D VAS rating')
+
+# Hypothesis test: EQ5D VAS by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(VAS_score ~ as.factor(Site), 
+                     data = eq5d_vas)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+eq5d_vas.ci <- eq5d_vas %>%
+    select(ID, Site, VAS_score) %>%
+    spread(key = Site,
+           value = VAS_score) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = eq5d_vas.ci[[pairs$V1[[i]]]],
+                          y = eq5d_vas.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    ### Remove p-value (not required)
+    select(-p.value) %>%
+    knitr::kable(caption = 'Median of the difference in EQ5D score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+
+# Plot: EQ5D VAS by urban/rural
+ggplot(data = eq5d_vas) +
+    aes(x = Type,
+        y = VAS_score) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    labs(title = 'EQ5D VAS rating by urban/rural',
+         x = 'Study site',
+         y = 'EQ5D VAS rating')
+
+# Hypothesis test: EQ5D VAS by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(VAS_score ~ as.factor(Type), 
+                    data = eq5d_vas,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in EQ5D VAS rating (estimate) between urban and rural study sites')
+```
+
+****
+
+## BDI
+### Process data
+```{r bdi}
+bdi_score <- bdi %>%
+    # Select columns
+    select(ID, Site, Type, ends_with('_BL')) %>%
+    # Make a total score column
+    mutate(BDI_score = rowSums(.[-c(1, 2, 3, 4)]),
+           # Treat PSS as a discrete scale
+           BDI_score = as.integer(round(BDI_score)))
+```
+
+### Plots and analysis
+```{r bdi_plots}
+# Plot: BDI by site
+ggplot(data = bdi_score) +
+    aes(x = Site,
+        y = BDI_score) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    geom_hline(yintercept = c(10, 16, 20, 30, 40), size = 0.25, linetype = 2) +
+    labs(title = 'BDI score by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'BDI score')
+
+# Hypothesis test: BDI by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(BDI_score ~ as.factor(Site), 
+                     data = bdi_score)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+bdi_score.ci <- bdi_score %>%
+    select(ID, Site, BDI_score) %>%
+    spread(key = Site,
+           value = BDI_score) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = bdi_score.ci[[pairs$V1[[i]]]],
+                          y = bdi_score.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    ### arrange by p.value
+    arrange(p.value) %>%
+    knitr::kable(caption = 'Median of the difference in BDI score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+
+# Plot: BDI by urban/rural
+ggplot(data = bdi_score) +
+    aes(x = Type,
+        y = BDI_score) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    geom_hline(yintercept = c(10, 16, 20, 30, 40), size = 0.25, linetype = 2) +
+    labs(title = 'Mean BDI score by urban/rural',
+         x = 'Study site',
+         y = 'BDI score')
+
+# Hypothesis test: BDI by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(BDI_score ~ as.factor(Type), 
+                    data = bdi_score,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in BDI score (estimate) between urban and rural study sites')
+```
+
+****
+
+## Age
+### Process data
+```{r age}
+age_years <- demographics %>%
+    # Select columns
+    select(ID, Site, Type, Age)
+```
+
+### Plots and analysis
+```{r age_plots}
+# Plot: age by site
+ggplot(data = age_years) +
+    aes(x = Site,
+        y = Age) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    labs(title = 'Participant age (years) by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'age (years)')
+
+# Hypothesis test: age by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(Age ~ as.factor(Site), 
+                     data = age_years)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+age_years.ci <- age_years %>%
+    select(ID, Site, Age) %>%
+    spread(key = Site,
+           value = Age) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = age_years.ci[[pairs$V1[[i]]]],
+                          y = age_years.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    ### arrange by p.value
+    arrange(p.value) %>%
+    knitr::kable(caption = 'Median of the difference in age in years (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+
+# Plot: age by urban/rural
+ggplot(data = age_years) +
+    aes(x = Type,
+        y = Age) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    labs(title = 'Age (years) by urban/rural',
+         x = 'Study site',
+         y = 'Age (years)')
+
+# Hypothesis test: age by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(Age ~ as.factor(Type), 
+                    data = age_years,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in age in years (estimate) between urban and rural study sites')
+```
+
+****
+
+## CD4 T-cell count (latest)
+### Process data
+```{r CD4}
+CD4_count <- demographics %>%
+    # Select columns
+    select(ID, Site, Type, CD4_recent)
+```
+
+### Plots and analysis
+```{r CD4_plots}
+# Plot: CD4 by site
+ggplot(data = CD4_count) +
+    aes(x = Site,
+        y = CD4_recent) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    labs(title = 'Participant CD4 T-cell count (cells/ul) by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'CD4 (cells/ul)')
+
+# Hypothesis test: CD4 by site
+knitr::kable(
+    broom::tidy(
+        kruskal.test(CD4_recent ~ as.factor(Site), 
+                     data = CD4_count)))
+
+
+# Delta confidence interval and p-value
+## Simplify and spread the data
+CD4_count.ci <- CD4_count %>%
+    select(ID, Site, CD4_recent) %>%
+    spread(key = Site,
+           value = CD4_recent) 
+
+## Define a list of length 6 (number of comparison pairs)
+foo <- vector(mode = 'list', length = 6)
+
+## Loop through the list, perform a Wilcox test and tabulate
+for(i in 1:6) {
+    foo[[i]] <- wilcox.test(x = CD4_count.ci[[pairs$V1[[i]]]],
+                          y = CD4_count.ci[[pairs$V2[[i]]]],
+                          conf.int = TRUE)[c(3, 8:9)]
+    
+    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
+                           conf.low = foo[[i]]$conf.int[[1]],
+                           conf.high = foo[[i]]$conf.int[[2]],
+                           # Adjust p-value for multiple comparisons
+                           p.value = p.adjust(foo[[i]]$p.value, 
+                                              method = 'holm', 
+                                              n = 6))
+}
+
+## Print table
+### Convert to a single dataframe
+map_df(.x = foo,
+       ~ .x) %>%
+    ### Add a 'comparison' column, sort, and arrange
+    mutate(comparison = pairs$comparison) %>%
+    select(comparison, everything()) %>%
+    ### remove p.value (Kruskal-Wallis result was not significant, so no post-hocs)
+    select(-p.value) %>%
+    knitr::kable(caption = 'Median of the difference in CD4 T-cell count (estimate) between study sites')
+
+# Plot: CD4 by urban/rural
+ggplot(data = CD4_count) +
+    aes(x = Type,
+        y = CD4_recent) +
+    geom_boxplot() +
+    geom_jitter(height = 0,
+                shape = 21) +
+    labs(title = 'CD4 T-cell count (cells/ul) by urban/rural',
+         x = 'Study site',
+         y = 'CD4 (cells/ul)')
+
+# Hypothesis test: CD4 by urban/rural
+knitr::kable(
+    broom::tidy(
+        wilcox.test(CD4_recent ~ as.factor(Type), 
+                    data = CD4_count,
+                    conf.int = TRUE)),
+    caption = 'Median of the difference in CD4 T-cell count (estimate) between urban and rural study sites')
+```
+
+****
+
+## Employment status
+### Process data
+```{r occupation}
+occupation <- demographics %>%
+    # Select columns
+    select(ID, Site, Type, Occupation) %>%
+    # Recode occupation
+    mutate(Occupation_new = case_when(
+        Occupation == 'employed' ~ 'employed',
+        stringr::str_detect(Occupation, 'unemployed') ~ 'unemployed',
+        stringr::str_detect(Occupation, 'student') |
+            stringr::str_detect(Occupation, 'unable') ~ 'other'
+    ))
+```
+
+### Plots and analysis
+```{r occupation_plots}
+# Plot: Occupation by site
+ggplot(data = occupation) +
+    aes(x = Site,
+        fill = Occupation) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = 'Original employment status by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by site)') +
+    coord_flip() 
+
+knitr::kable(xtabs(~ Occupation + Site, 
+                   data = occupation),
+             caption = 'Employment status by study site (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Occupation + Site, 
+          data = occupation)), 1),
+    caption = 'Employment status by study site (percentages)')
+
+ggplot(data = occupation) +
+    aes(x = Site,
+        fill = Occupation_new) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = 'Simplified employment status by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by site)') +
+    coord_flip() 
+
+# Hypothesis test: (Simplified) occupation status by site
+knitr::kable(xtabs(~ Occupation_new + Site, 
+                   data = occupation),
+             caption = '(Simplified) employment status by study site (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Occupation_new + Site, 
+          data = occupation)), 1),
+    caption = '(Simplified) employment status by study site (percentages)')
+
+# Fisher's test
+knitr::kable(
+    broom::tidy(
+        fisher.test(xtabs(~Occupation_new + Site, data = occupation))),
+    caption = 'Fisher\'s exact test on (simplified) employment status by site')
+
+knitr::kable(
+    broom::tidy(
+        with(occupation, 
+             pairwise.fisher.test(x = Occupation_new,
+                                  g = Site,
+                                  p.adjust.method = 'holm')))[1:3],
+    caption = 'Pairwise Fisher Exact tests of (simplified) employment status by study site (Holm corrected p-values)')
+
+# Plot: Occupation by urban/rural
+ggplot(data = occupation) +
+    aes(x = Type,
+        fill = Occupation) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = 'Original employment status by urban and rural study sites',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by urban/rural)') +
+    coord_flip() 
+
+knitr::kable(xtabs(~ Occupation + Type, 
+                   data = occupation),
+             caption = 'Employment status by urban/rural(counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Occupation + Type, 
+          data = occupation)), 1),
+    caption = 'Employment status by urban/rural (percentages)')
+
+ggplot(data = occupation) +
+    aes(x = Type,
+        fill = Occupation_new) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = 'Simplified employment status by urban and rural study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by urban/rural)') +
+    coord_flip() 
+
+# Hypothesis test: (Simplified) occupation status by site
+knitr::kable(xtabs(~ Occupation_new + Type, 
+                   data = occupation),
+             caption = '(Simplified) employment status by urban/rural (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Occupation_new + Type, 
+          data = occupation)), 1),
+    caption = '(Simplified) employment status (percentages)')
+
+# Fisher's test
+knitr::kable(
+    broom::tidy(
+        fisher.test(xtabs(~Occupation_new + Site, data = occupation))),
+    caption = 'Fisher\'s exact test on (simplified) employment status for urban vs rural study sites')
+```
+
+****
+
+## Health literacy
+Note: Health literacy was not assessed at the U1 site.
+
+### Process data
+```{r sos_lit}
+sos_lit <- demographics %>%
+    # Select columns
+    select(ID, Site, Type, SOS_mnemonic) %>%
+    # Recode sos_lit
+    mutate(SOS_mnemonic = case_when(
+        SOS_mnemonic == 'lhl' ~ 'Low literacy',
+        SOS_mnemonic == 'hl' ~ 'High literacy'
+    )) %>%
+    filter(!is.na(SOS_mnemonic))
+```
+
+### Plots and analysis
+```{r sos_lit_plots}
+# Plot: health literacy by site
+ggplot(data = sos_lit) +
+    aes(x = Site,
+        fill = SOS_mnemonic) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    scale_fill_brewer(palette = 'Paired') +
+    labs(title = 'Health literacy by study site',
+         subtitle = 'Note: Health literacy was not assessed at the U1 site.',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by site)') +
+    coord_flip() +
+    theme(legend.title = element_blank())
+
+knitr::kable(xtabs(~ SOS_mnemonic + Site, 
+                   data = sos_lit),
+             caption = 'Health literacy by study site (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ SOS_mnemonic + Site, 
+          data = sos_lit)), 1),
+    caption = 'Health literacy by study site (percentages)')
+
+# Hypothesis test: health literacy status by site
+knitr::kable(
+    broom::tidy(
+        fisher.test(xtabs(~ SOS_mnemonic + Site, data = sos_lit))),
+    caption = 'Fisher\'s exact test on health literacy by site')
+
+knitr::kable(
+    broom::tidy(
+        with(sos_lit, 
+             pairwise.fisher.test(x = SOS_mnemonic,
+                                  g = Site,
+                                  p.adjust.method = 'holm')))[1:3],
+    caption = 'Pairwise Fisher Exact tests of health literacy by study site (Holm corrected p-values)')
+
+# Plot: sos_lit by urban/rural
+ggplot(data = sos_lit) +
+    aes(x = Type,
+        fill = SOS_mnemonic) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    scale_fill_brewer(palette = 'Paired') +
+    labs(title = 'Health literacy by urban/rural',
+         caption = '"r" = rural, "u" = urban',
+         subtitle = 'Note: Health literacy was not assessed at the U1 site.',
+         x = 'Study site',
+         y = 'Proportion of study population (by urban/rural)') +
+    coord_flip() +
+    theme(legend.title = element_blank())
+
+knitr::kable(xtabs(~ SOS_mnemonic + Type, 
+                   data = sos_lit),
+             caption = 'Health literacy by urban/rural (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ SOS_mnemonic + Type, 
+          data = sos_lit)), 1),
+    caption = 'Health literacy by urban/rural (percentages)')
+
+# Hypothesis test: (Simplified) sos_lit status by site
+knitr::kable(
+    broom::tidy(
+        fisher.test(xtabs(~ SOS_mnemonic + Site, data = sos_lit))),
+    caption = 'Fisher\'s exact test on health literacy for urban vs rural study sites')
+```
+
+****
+
+## Education
+### Process data
+```{r education}
+education <- demographics %>%
+    # Select columns
+    select(ID, Site, Type, Years_education) 
+```
+
+### Plots and analysis
+```{r education_plots}
+# Plot: education by site
+ggplot(data = education) +
+    aes(x = Site,
+        fill = forcats::fct_rev(Years_education)) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = 'Years of education by study site',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by site)') +
+    coord_flip() +
+    theme(legend.title = element_blank())
+
+knitr::kable(xtabs(~ Years_education + Site, 
+                   data = education),
+             caption = 'Years of education by study site (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Years_education + Site, 
+          data = education)), 1),
+    caption = 'Years of education by study site (percentages)')
+
+## Collapse levels into no schooling (0), primary school (1-7), 
+## secondary school (8-12), post-school (+12)
+education_new <- education %>%
+    mutate(Years_education = forcats::fct_collapse(Years_education,
+                                                   none = '0',
+                                                   primary = c('1', '2', '3', '4',
+                                                               '5', '6', '7'),
+                                                   secondary = c('8', '9', '10',
+                                                                 '11', '12', '12+')),
+           Years_education = forcats::fct_relevel(Years_education,
+                                                  'none', 'primary',
+                                                  'secondary'))
+
+ggplot(data = education_new) +
+    aes(x = Site,
+        fill = forcats::fct_rev(Years_education)) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = '(Simplified) years of education by study site',
+         subtitle = '\'secondary\' includes the 2 participants in U1 that attained tertiary education', 
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by site)') +
+    coord_flip() +
+    theme(legend.title = element_blank())
+
+knitr::kable(xtabs(~ Years_education + Site, 
+                   data = education_new),
+             caption = '(Simplified) years of education by study site (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Years_education + Site, 
+          data = education_new)), 1),
+    caption = '(Simplified) years of education by study site (percentages)')
+
+# Hypothesis test: health literacy status by site
+knitr::kable(
+    broom::tidy(
+        fisher.test(xtabs(~ Years_education + Site, data = education_new))),
+    caption = 'Fisher\'s exact test on (simplified) years of education by study site')
+
+knitr::kable(
+    broom::tidy(
+        with(education_new, 
+             pairwise.fisher.test(x = Years_education,
+                                  g = Site,
+                                  p.adjust.method = 'holm')))[1:3],
+    caption = 'Pairwise Fisher Exact tests on (simplified) years of eduaction by study site (Holm corrected p-values)')
+
+# Plot: education by urban/rural
+ggplot(data = education) +
+    aes(x = Type,
+        fill = forcats::fct_rev(Years_education)) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = 'Years of education by urban/rural',
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by urban/rural)') +
+    coord_flip() +
+    theme(legend.title = element_blank())
+
+knitr::kable(xtabs(~ Years_education + Site, 
+                   data = education),
+             caption = 'Years of education by urban/rural (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Years_education + Site, 
+          data = education)), 1),
+    caption = 'Years of education by urban/rural (percentages)')
+
+ggplot(data = education_new) +
+    aes(x = Type,
+        fill = forcats::fct_rev(Years_education)) +
+    geom_bar(position = 'fill') +
+    scale_y_discrete(expand = c(0, 0)) +
+    viridis::scale_fill_viridis(discrete = TRUE) +
+    labs(title = '(Simplified) years of education by urban/rural',
+         subtitle = '\'secondary\' includes the 2 participants in U1 that attained tertiary education', 
+         caption = '"r" = rural, "u" = urban',
+         x = 'Study site',
+         y = 'Proportion of study population (by urban/rural)') +
+    coord_flip() +
+    theme(legend.title = element_blank())
+
+knitr::kable(xtabs(~ Years_education + Type, 
+                   data = education_new),
+             caption = '(Simplified) years of education by urban/rural (counts)')
+
+knitr::kable(round(100 * prop.table(
+    xtabs(~ Years_education + Type, 
+          data = education_new)), 1),
+    caption = '(Simplified) years of education by urban/rural (percentages)')
+
+# Hypothesis test: health literacy status by site
+knitr::kable(
+    broom::tidy(
+        fisher.test(xtabs(~ Years_education + Type, data = education_new))),
+    caption = 'Fisher\'s exact test on (simplified) years of education by urban/rural')
+```
+
+## Session information
+```{r session_info}
+sessionInfo()
+```
