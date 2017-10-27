@@ -90,7 +90,6 @@ nnt_BOCF <- nnt %>%
      #      PSS_Wk48 = rowMeans(.[c(5, 7, 9, 11)], na.rm = TRUE))
 ```
 
-
 ## Session information
 ```{r session_info}
 sessionInfo()
