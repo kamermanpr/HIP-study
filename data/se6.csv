@@ -1,4 +1,4 @@
-ID,Fatigue_BL,Fatigue_Wk4,Fatigue_Wk8,Fatigue_Wk12,Fatigue_Wk24,Fatigue_Wk48,Discomf_BL,Discomf_Wk4,Discomf_Wk8,Discomf_Wk12,Discomf_Wk24,Discomf_Wk48,Distress_BL,Distress_Wk4,Distress_Wk8,Distress_Wk12,Distress_Wk24,Distress_Wk48,Other_sympt_BL,Other_sympt_Wk4,Other_sympt_Wk8,Other_sympt_Wk12,Other_sympt_Wk24,Other_sympt_Wk48,Tasks_BL,Tasks_Wk4,Tasks_Wk8,Tasks_Wk12,Tasks_Wk24,Tasks_Wk48,Non_drug_BL,Non_drug_Wk4,Non_drug_Wk8,Non_drug_Wk12,Non_drug_Wk24,Non_drug_Wk48
+ID,Fatigue.BL,Fatigue.Wk4,Fatigue.Wk8,Fatigue.Wk12,Fatigue.Wk24,Fatigue.Wk48,Physical_discomfort.BL,Physical_discomfort.Wk4,Physical_discomfort.Wk8,Physical_discomfort.Wk12,Physical_discomfort.Wk24,Physical_discomfort.Wk48,Emotional_distress.BL,Emotional_distress.Wk4,Emotional_distress.Wk8,Emotional_distress.Wk12,Emotional_distress.Wk24,Emotional_distress.Wk48,Other_symptoms.BL,Other_symptoms.Wk4,Other_symptoms.Wk8,Other_symptoms.Wk12,Other_symptoms.Wk24,Other_symptoms.Wk48,Tasks.BL,Tasks.Wk4,Tasks.Wk8,Tasks.Wk12,Tasks.Wk24,Tasks.Wk48,Non_drug.BL,Non_drug.Wk4,Non_drug.Wk8,Non_drug.Wk12,Non_drug.Wk24,Non_drug.Wk48
 J1,5,NA,NA,NA,NA,NA,5,NA,NA,NA,NA,NA,5,NA,NA,NA,NA,NA,1,NA,NA,NA,NA,NA,5,NA,NA,NA,NA,NA,5,NA,NA,NA,NA,NA
 J3,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 J4,9,9,10,9,9,8,9,9,9,9,9,8,10,9,9,10,10,8,10,9,10,10,10,9,9,10,10,10,10,9,10,10,10,10,9,8
@@ -40,7 +40,7 @@ J54,9,NA,NA,NA,NA,NA,9,NA,NA,NA,NA,NA,9,NA,NA,NA,NA,NA,9,NA,NA,NA,NA,NA,9,NA,NA,
 J55,7,NA,NA,NA,NA,NA,8,NA,NA,NA,NA,NA,8,NA,NA,NA,NA,NA,8,NA,NA,NA,NA,NA,8,NA,NA,NA,NA,NA,8,NA,NA,NA,NA,NA
 J56,10,10,7,10,NA,NA,9,10,9,10,NA,NA,7,10,7,10,NA,NA,10,10,8,10,NA,NA,10,10,8,10,NA,NA,9,10,7,10,NA,NA
 J57,5,7,8,9,10,8,6,7,8,9,10,8,7,8,9,9,10,8,7,8,9,10,10,9,8,8,10,10,10,10,8,8,10,10,10,10
-J59,NA,10,9,8,8,6.5,NA,10,9,9,8,7,NA,10,10,9,8,7,NA,10,10,9,8,7,NA,10,10,10,9,7,NA,10,10,10,8,7
+J59,NA,10,9,8,8,6,NA,10,9,9,8,7,NA,10,10,9,8,7,NA,10,10,9,8,7,NA,10,10,10,9,7,NA,10,10,10,8,7
 J60,10,7,7,8,8,7,10,8,7,8,8,7,10,8,8,8,9,8,9,7,8,8,9,7,10,8,9,9,9,8,10,9,9,9,9,8
 J61,9,8,8,9,NA,9,9,8,8,9,NA,9,9,9,9,9,NA,8,9,9,9,9,NA,9,9,10,10,9,NA,9,9,10,10,9,NA,9
 J62,10,10,10,10,10,8,10,10,10,10,10,7,10,10,10,10,10,7,10,10,10,10,10,7,10,10,10,10,10,9,10,10,10,10,10,8
