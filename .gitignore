@@ -6,5 +6,5 @@ Icon?
 .DS_Store
 .dropbox
 .Rapp.history
-original-data/
-*.html
+original-data/demographics.xlsx
+original-data/site-key.txt
