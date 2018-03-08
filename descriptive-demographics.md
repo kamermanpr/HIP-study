@@ -1,5 +1,6 @@
 ---
-title: "HIP demographics: Descriptive analyses"
+title: "HIP: Demographic data"
+subtitle: "Descriptive analyses"
 author: "Peter Kamerman and Tory Madden"
 date: "08 March 2018"
 output: 
@@ -14,6 +15,10 @@ output:
 ---
 
 
+
+----
+
+Basic descriptive statistics of core demographic data. No tests of statistical significance are performed (see baseline-analysis.* for NHST).
 
 ----
 
