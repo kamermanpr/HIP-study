@@ -1,5 +1,6 @@
 ---
-title: "HIP demographics: Descriptive analyses"
+title: "HIP: Demographic data"
+subtitle: "Descriptive analyses"
 author: "Peter Kamerman and Tory Madden"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 output: 
@@ -30,6 +31,10 @@ knitr::opts_chunk$set(warning = FALSE,
                       fig.width = 7,
                       fig.height = 7)
 ```
+
+----
+
+Basic descriptive statistics of core demographic data. No tests of statistical significance are performed (see baseline-analysis.* for NHST).
 
 ----
 
