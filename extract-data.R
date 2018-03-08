@@ -279,9 +279,9 @@ BPI_clean %<>%
 
 # Fix column classes
 BPI_clean %<>%
-    mutate_at(.vars = 1:7, 
+    mutate_at(.vars = c(1:7, 32:37), 
               .funs = as.character) %>% 
-    mutate_at(.vars = 8:85, 
+    mutate_at(.vars = c(8:31, 38:85), 
               .funs = as.integer)
 
 # Remove Group E participants
