@@ -1,5 +1,5 @@
 ---
-title: "HIP: Demographic data"
+title: "HIP: Baseline demographic data"
 subtitle: "Descriptive analyses"
 author: "Peter Kamerman and Tory Madden"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
@@ -8,8 +8,7 @@ output:
         theme: yeti
         keep_md: true
         highlight: pygments
-        df_print: paged
-        toc: true
+        oc: true
         toc_float: true
         code_folding: show
 ---
@@ -34,7 +33,7 @@ knitr::opts_chunk$set(warning = FALSE,
 
 ----
 
-Basic descriptive statistics of core demographic data. No tests of statistical significance are performed (see baseline-analysis.* for NHST).
+Basic descriptive statistics of core demographic data at baseline (time = 0 weeks). No tests of statistical significance are performed (see baseline-analysis.* for NHST).
 
 ----
 
@@ -51,9 +50,13 @@ demo <- read_rds('./data/demographics.rds')
 
 ```{r quick_look}
 glimpse(demo)
-head(demo)
-tail(demo)
-skim(demo)
+demo %>% 
+    skim_to_wide() %>% 
+    select(variable, missing, complete, n) %>%
+    mutate_at(.vars = c(2:4),
+              .funs = as.numeric) %>% 
+    arrange(complete) %>% 
+    kable(caption = 'Tabular summary of data completeness')
 ```
 
 ----
