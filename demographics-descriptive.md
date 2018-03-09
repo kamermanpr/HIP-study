@@ -8,7 +8,7 @@ output:
         theme: yeti
         keep_md: true
         highlight: pygments
-        oc: true
+        toc: true
         toc_float: true
         code_folding: show
 ---
@@ -67,7 +67,9 @@ glimpse(demo)
 ```r
 demo %>% 
     skim_to_wide() %>% 
-    select(variable, missing, complete, n) %>% 
+    select(variable, missing, complete, n) %>%
+    mutate_at(.vars = c(2:4),
+              .funs = as.numeric) %>% 
     arrange(complete) %>% 
     kable(caption = 'Tabular summary of data completeness')
 ```
@@ -76,29 +78,29 @@ demo %>%
 
 Table: Tabular summary of data completeness
 
-variable             missing   complete   n   
+variable              missing   complete     n
 -------------------  --------  ---------  ----
-DODx                 52        108        160 
-SOS_mnemonic         47        113        160 
-DOB                  46        114        160 
-CD4_recent           33        127        160 
-HIV_mx               4         156        160 
-Years of schooling   4         156        160 
-Occupation           3         157        160 
-Years_education      2         158        160 
-Adjuvant             0         160        160 
-Group                0         160        160 
-ID                   0         160        160 
-Mild_opioid          0         160        160 
-NSAID                0         160        160 
-Paracetamol          0         160        160 
-Sex                  0         160        160 
-Site                 0         160        160 
-Age                  0         160        160 
-WHO_level            0         160        160 
-HIV_stage            96        64         160 
-Years_on_ART         78        82         160 
-CD4                  67        93         160 
+HIV_stage                  96         64   160
+Years_on_ART               78         82   160
+CD4                        67         93   160
+DODx                       52        108   160
+SOS_mnemonic               47        113   160
+DOB                        46        114   160
+CD4_recent                 33        127   160
+HIV_mx                      4        156   160
+Years of schooling          4        156   160
+Occupation                  3        157   160
+Years_education             2        158   160
+Adjuvant                    0        160   160
+Group                       0        160   160
+ID                          0        160   160
+Mild_opioid                 0        160   160
+NSAID                       0        160   160
+Paracetamol                 0        160   160
+Sex                         0        160   160
+Site                        0        160   160
+Age                         0        160   160
+WHO_level                   0        160   160
 
 ----
 
