@@ -8,7 +8,7 @@ output:
         theme: yeti
         keep_md: true
         highlight: pygments
-        oc: true
+        toc: true
         toc_float: true
         code_folding: show
 ---
