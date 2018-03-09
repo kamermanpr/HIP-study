@@ -1,0 +1,192 @@
+---
+title: "HIP: Brief Pain Inventory"
+subtitle: "Data completeness"
+author: "Peter Kamerman"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: 
+   html_document:
+        theme: yeti
+        keep_md: true
+        highlight: pygments
+        toc: true
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(tidyverse)
+library(magrittr)
+library(skimr)
+
+# Set ggplot2 theme
+theme_set(new = theme_bw(base_size = 14))
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.retina = 2,
+                      fig.align = 'center',
+                      fig.path = 'figures/bpi-completeness/',
+                      fig.width = 9,
+                      fig.height = 7)
+```
+
+----
+
+A descriptive analysis of the completeness of the Brief Pain Inventory data.
+
+----
+
+# Import data
+
+```{r data_import}
+# Read in bpi data
+bpi <- read_rds('./data/bpi.rds') 
+
+# Read in site and group info
+foo <- read_rds('./data/demographics.rds') %>%
+    select(ID, Site, Group, Sex)
+
+# Join the two datasets 
+bpi %<>%
+    left_join(foo)
+    
+# Remove foo
+rm(foo)
+```
+
+----
+
+# Quick look 
+
+```{r quick_look}
+glimpse(bpi)
+skim_to_list(bpi) %>% 
+    map(~ select(.x, variable, missing, complete, n)) %>% 
+    walk(~ print(.x, n = 100))
+```
+
+Looking at the missing data column in the `skimr::skim` output, missing data for the first question (`Pain_present`) is a good proxy of missing data across all other questions (i.e., participant had or had not answered the entire questionnaire at a given time point). As such, our analysis of data completeness will only include an assessment of the `Pain_present` data.
+
+----
+
+# Clean data
+
+```{r prep_clean}
+# Gather into long format and process time/question column
+bpi %<>%
+    select(ID, Site, Group, starts_with('Pain_present')) %>% 
+    gather(key = question,
+           value = answer,
+           -ID, - Site, - Group) %>%
+    # Separate pain_question into constituent parts
+    separate(col = question, 
+             into = c('question', 'time'),
+             sep = '\\.') %>%
+    # Convert time points to integer
+    ungroup() %>%
+    mutate(time = str_replace(string = time, 
+                              pattern = 'Wk',
+                              replacement = ''),
+           time = str_replace(string = time, 
+                              pattern = 'BL',
+                              replacement = '0'),
+           time = as.integer(time)) 
+```
+
+----
+
+# Data completeness
+
+### Study site
+
+```{r completeness_site, fig.height = 9}
+bpi %>%
+    # Code whether data in bdi_rating is missing or not
+    mutate(coding = ifelse(is.na(answer), 
+                           yes = 'Missing data',
+                           no = 'Data available')) %>% 
+    # Get nominal sample size for each site
+    group_by(Site, time) %>% 
+    mutate(sample_size = n()) %>%
+    ungroup() %>% 
+    mutate(Site = paste0(Site, ' (n = ', sample_size, ')')) %>% 
+    # Plot
+    ggplot(data = .) +
+    aes(x = question) +
+    geom_bar(aes(fill = coding),
+             position = position_fill()) +
+    labs(title = 'Completeness of data for the BPI questionnaire at each study site',
+         subtitle = "Nominal sample size at each site is given in the 'Site' facet label",
+         x = 'Time (weeks)',
+         y = 'Proportion of participants') +
+    scale_fill_brewer(type = 'qual', 
+                      palette = 'Dark2') +
+    facet_grid(Site ~ time,
+               labeller = label_both) +
+    theme(legend.position = 'top',
+          legend.title = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank())
+```
+
+### Study site and group
+
+```{r completeness_group}
+complete_group <- bpi %>%
+    # Code whether data in bdi_rating is missing or not
+    mutate(coding = ifelse(is.na(answer), 
+                           yes = 'Missing data',
+                           no = 'Data available')) %>% 
+    # Nest
+    group_by(Site) %>% 
+    nest() %>% 
+    arrange(Site) %>%
+    # Calculate nominal number of participants per Site
+    mutate(summary_p = map(.x = data,
+                           ~ filter(.data = .x, 
+                                    Group == 'p') %>%
+                               summarise(count = as.integer(
+                                   sum(!is.na(ID)) / 6))),
+           summary_t = map(.x = data,
+                           ~ filter(.data = .x, 
+                                    Group == 't') %>% 
+                               summarise(count = as.integer(
+                                   sum(!is.na(ID)) / 6)))) %>% 
+    # Plot data
+    mutate(plot = pmap(.l = list(data, Site, 
+                                 summary_p, summary_t),
+                       ~ ggplot(data = ..1) +
+                           aes(x = question,
+                               fill = coding) +
+                           geom_bar(position = position_fill()) +
+                           labs(title = str_glue('Site: {..2} - Completeness of data for the BPI questionnaire for each intervention group'),
+                                subtitle = str_glue('Nominal sample size (Group P): {..3}\nNominal sample size (Group T): {..4}'),
+                                x = 'Time (weeks)',
+                                y = 'Proportion of participants') +
+                           scale_fill_brewer(type = 'qual', 
+                                             palette = 'Dark2') +
+                           facet_grid(Group ~ time, 
+                                      labeller = label_both) +
+                           theme(legend.position = 'top',
+                                 legend.title = element_blank(),
+                                 axis.text.x = element_blank(),
+                                 axis.ticks.x = element_blank()))) 
+
+# Print output
+walk(.x = complete_group$plot, ~ print(.x))
+```
+
+----
+
+# Summary
+
+Other than site _R1_, the other sites have 100% or near 100% (_U1_) records at baseline (time = 0 weeks), thereafter, there is a trend for progressively more incomplete data over time. 
+
+----
+
+## Session information
+```{r session_info}
+sessionInfo()
+```
