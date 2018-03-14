@@ -1,161 +1,161 @@
-ID,income_stability
-J1,stable income
-J3,NA
-J4,stable income
-J5,unstable or no income
-J6,unstable or no income
-J7,unstable or no income
-J9,stable income
-J10,unstable or no income
-J11,unstable or no income
-J12,stable income
-J17,stable income
-J18,stable income
-J19,unstable or no income
-J22,stable income
-J23,stable income
-J24,stable income
-J29,unstable or no income
-J30,unstable or no income
-J31,stable income
-J32,stable income
-J33,unstable or no income
-J34,stable income
-J35,unstable or no income
-J36,unstable or no income
-J37,stable income
-J38,stable income
-J40,unstable or no income
-J41,unstable or no income
-J42,unstable or no income
-J43,unstable or no income
-J44,unstable or no income
-J45,unstable or no income
-J46,stable income
-J49,unstable or no income
-J51,unstable or no income
-J52,unstable or no income
-J53,stable income
-J54,stable income
-J55,unstable or no income
-J56,unstable or no income
-J57,unstable or no income
-J59,stable income
-J60,stable income
-J61,stable income
-J62,unstable or no income
-J67,unstable or no income
-J68,unstable or no income
-Z1,unstable or no income
-Z2,unstable or no income
-Z3,stable income
-Z4,unstable or no income
-Z5,unstable or no income
-Z6,stable income
-Z7,stable income
-Z8,stable income
-Z9,unstable or no income
-Z10,unstable or no income
-Z11,stable income
-Z12,stable income
-Z13,unstable or no income
-Z14,unstable or no income
-Z15,unstable or no income
-Z16,unstable or no income
-Z17,unstable or no income
-Z18,unstable or no income
-Z19,stable income
-Z20,unstable or no income
-Z21,unstable or no income
-Z22,unstable or no income
-Z23,unstable or no income
-Z24,unstable or no income
-Z25,unstable or no income
-Z26,unstable or no income
-Z27,unstable or no income
-Z28,unstable or no income
-Z29,unstable or no income
-Z30,unstable or no income
-Z31,unstable or no income
-Z32,unstable or no income
-Z33,unstable or no income
-Z34,unstable or no income
-Z35,unstable or no income
-Z36,unstable or no income
-Z37,stable income
-Z38,unstable or no income
-Z39,unstable or no income
-Z40,unstable or no income
-Z41,unstable or no income
-Z42,unstable or no income
-Z43,unstable or no income
-Z44,unstable or no income
-Z45,stable income
-Z46,unstable or no income
-Z47,unstable or no income
-Z48,unstable or no income
-Z49,unstable or no income
-M1,unstable or no income
-M2,unstable or no income
-M3,unstable or no income
-M4,NA
-M5,stable income
-M6,stable income
-M7,unstable or no income
-M8,unstable or no income
-M9,stable income
-M10,stable income
-M11,stable income
-M12,unstable or no income
-M13,stable income
-M14,stable income
-M15,stable income
-M16,stable income
-M17,stable income
-M18,unstable or no income
-M19,stable income
-M20,stable income
-M21,unstable or no income
-M22,stable income
-M23,stable income
-M24,unstable or no income
-M25,unstable or no income
-M26,stable income
-M27,unstable or no income
-M28,stable income
-M29,stable income
-M30,stable income
-M31,unstable or no income
-M32,NA
-M33,stable income
-M34,stable income
-M35,unstable or no income
-M36,unstable or no income
-M37,stable income
-M38,unstable or no income
-M39,stable income
-M40,unstable or no income
-M41,stable income
-M42,unstable or no income
-M43,unstable or no income
-M44,stable income
-M45,unstable or no income
-M46,stable income
-M47,unstable or no income
-R137,unstable or no income
-R154,unstable or no income
-R221,stable income
-R206,unstable or no income
-R203,stable income
-R168,stable income
-R182,unstable or no income
-R219,unstable or no income
-R239,unstable or no income
-R230,unstable or no income
-R404,unstable or no income
-R408,unstable or no income
-R411,unstable or no income
-R427,unstable or no income
-R412,unstable or no income
-R436,stable income
-R443,stable income
+ID,income_stability,Sex,Site,Group
+J1,stable income,female,U1,P
+J3,NA,female,U1,T
+J4,stable income,female,U1,P
+J5,unstable or no income,female,U1,P
+J6,unstable or no income,female,U1,P
+J7,unstable or no income,female,U1,T
+J9,stable income,female,U1,T
+J10,unstable or no income,male,U1,T
+J11,unstable or no income,female,U1,P
+J12,stable income,female,U1,T
+J17,stable income,female,U1,T
+J18,stable income,female,U1,T
+J19,unstable or no income,female,U1,T
+J22,stable income,female,U1,P
+J23,stable income,male,U1,T
+J24,stable income,female,U1,T
+J29,unstable or no income,female,U1,T
+J30,unstable or no income,female,U1,P
+J31,stable income,female,U1,T
+J32,stable income,female,U1,T
+J33,unstable or no income,female,U1,P
+J34,stable income,female,U1,P
+J35,unstable or no income,female,U1,P
+J36,unstable or no income,female,U1,P
+J37,stable income,male,U1,P
+J38,stable income,female,U1,P
+J40,unstable or no income,female,U1,P
+J41,unstable or no income,male,U1,T
+J42,unstable or no income,male,U1,T
+J43,unstable or no income,male,U1,T
+J44,unstable or no income,male,U1,P
+J45,unstable or no income,female,U1,T
+J46,stable income,male,U1,P
+J49,unstable or no income,male,U1,P
+J51,unstable or no income,male,U1,P
+J52,unstable or no income,male,U1,P
+J53,stable income,male,U1,P
+J54,stable income,male,U1,P
+J55,unstable or no income,male,U1,P
+J56,unstable or no income,male,U1,P
+J57,unstable or no income,male,U1,P
+J59,stable income,female,U1,T
+J60,stable income,female,U1,T
+J61,stable income,female,U1,T
+J62,unstable or no income,female,U1,T
+J67,unstable or no income,female,U1,T
+J68,unstable or no income,female,U1,T
+Z1,unstable or no income,female,R2,T
+Z2,unstable or no income,female,R2,P
+Z3,stable income,female,R2,P
+Z4,unstable or no income,female,R2,P
+Z5,unstable or no income,female,R2,P
+Z6,stable income,female,R2,P
+Z7,stable income,female,R2,P
+Z8,stable income,female,R2,P
+Z9,unstable or no income,female,R2,P
+Z10,unstable or no income,female,R2,P
+Z11,stable income,female,R2,T
+Z12,stable income,female,R2,T
+Z13,unstable or no income,female,R2,T
+Z14,unstable or no income,female,R2,T
+Z15,unstable or no income,female,R2,P
+Z16,unstable or no income,female,R2,T
+Z17,unstable or no income,female,R2,T
+Z18,unstable or no income,female,R2,T
+Z19,stable income,female,R2,P
+Z20,unstable or no income,female,R2,P
+Z21,unstable or no income,female,R2,P
+Z22,unstable or no income,female,R2,T
+Z23,unstable or no income,female,R2,T
+Z24,unstable or no income,female,R2,T
+Z25,unstable or no income,female,R2,T
+Z26,unstable or no income,female,R2,P
+Z27,unstable or no income,female,R2,T
+Z28,unstable or no income,female,R2,P
+Z29,unstable or no income,female,R2,T
+Z30,unstable or no income,female,R2,P
+Z31,unstable or no income,female,R2,T
+Z32,unstable or no income,female,R2,P
+Z33,unstable or no income,female,R2,T
+Z34,unstable or no income,female,R2,P
+Z35,unstable or no income,female,R2,T
+Z36,unstable or no income,female,R2,P
+Z37,stable income,female,R2,T
+Z38,unstable or no income,female,R2,T
+Z39,unstable or no income,female,R2,P
+Z40,unstable or no income,female,R2,T
+Z41,unstable or no income,female,R2,P
+Z42,unstable or no income,female,R2,P
+Z43,unstable or no income,female,R2,P
+Z44,unstable or no income,female,R2,P
+Z45,stable income,female,R2,T
+Z46,unstable or no income,female,R2,P
+Z47,unstable or no income,female,R2,T
+Z48,unstable or no income,female,R2,T
+Z49,unstable or no income,female,R2,P
+M1,unstable or no income,male,R1,T
+M2,unstable or no income,male,R1,T
+M3,unstable or no income,male,R1,T
+M4,NA,male,R1,T
+M5,stable income,male,R1,T
+M6,stable income,male,R1,P
+M7,unstable or no income,male,R1,P
+M8,unstable or no income,male,R1,T
+M9,stable income,male,R1,T
+M10,stable income,male,R1,P
+M11,stable income,male,R1,P
+M12,unstable or no income,male,R1,T
+M13,stable income,male,R1,P
+M14,stable income,male,R1,P
+M15,stable income,male,R1,T
+M16,stable income,male,R1,P
+M17,stable income,male,R1,T
+M18,unstable or no income,male,R1,T
+M19,stable income,male,R1,P
+M20,stable income,male,R1,P
+M21,unstable or no income,male,R1,P
+M22,stable income,male,R1,T
+M23,stable income,male,R1,P
+M24,unstable or no income,male,R1,T
+M25,unstable or no income,male,R1,P
+M26,stable income,male,R1,P
+M27,unstable or no income,male,R1,P
+M28,stable income,male,R1,P
+M29,stable income,male,R1,P
+M30,stable income,male,R1,P
+M31,unstable or no income,male,R1,P
+M32,NA,male,R1,P
+M33,stable income,male,R1,P
+M34,stable income,male,R1,P
+M35,unstable or no income,male,R1,P
+M36,unstable or no income,male,R1,P
+M37,stable income,male,R1,P
+M38,unstable or no income,male,R1,P
+M39,stable income,male,R1,P
+M40,unstable or no income,male,R1,P
+M41,stable income,male,R1,P
+M42,unstable or no income,male,R1,T
+M43,unstable or no income,male,R1,T
+M44,stable income,male,R1,T
+M45,unstable or no income,male,R1,T
+M46,stable income,male,R1,T
+M47,unstable or no income,male,R1,T
+R137,unstable or no income,female,U2,P
+R154,unstable or no income,female,U2,P
+R221,stable income,female,U2,P
+R206,unstable or no income,female,U2,P
+R203,stable income,female,U2,P
+R168,stable income,female,U2,P
+R182,unstable or no income,female,U2,P
+R219,unstable or no income,female,U2,P
+R239,unstable or no income,female,U2,P
+R230,unstable or no income,female,U2,P
+R404,unstable or no income,female,U2,T
+R408,unstable or no income,female,U2,T
+R411,unstable or no income,female,U2,T
+R427,unstable or no income,female,U2,T
+R412,unstable or no income,female,U2,T
+R436,stable income,female,U2,T
+R443,stable income,female,U2,T

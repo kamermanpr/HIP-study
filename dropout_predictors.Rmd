@@ -11,12 +11,16 @@ output:
         toc: true
         toc_float: true
         code_folding: show
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include = FALSE}
 # Load packages
 library(tidyverse)
 library(skimr)
+library(coin)
+library(magrittr)
 
 # Set ggplot2 theme
 theme_set(new = theme_bw(base_size = 14))
@@ -30,10 +34,6 @@ knitr::opts_chunk$set(warning = FALSE,
                       fig.width = 7,
                       fig.height = 7)
 ```
-
-----
-
-Recoding of occupation
 
 ----
 
@@ -77,18 +77,163 @@ print(count)
 
 ```{r tidy_save}
 
-demo %<>% select(ID,
-                 income_stability)
+income_stability <- demo %>% select(ID,
+                 income_stability,
+                 Sex,
+                 Site,
+                 Group)
 
 # Save outputs
-write_rds(x = demo, 
+write_rds(x = income_stability, 
           path = './data/income_data.rds')
-write_csv(x = demo,
+write_csv(x = income_stability,
           path = './data/income_data.csv')
 
 ```
 
+# Import BPI data
+
+```{r data_bpi}
+# Read in bpi data
+bpi <- read_rds('./data/bpi.rds') 
+
+# Read in site and group info
+foo <- read_rds('./data/demographics.rds') %>%
+    select(ID, Site, Group, Sex)
+
+# Join the two datasets 
+bpi %<>%
+    left_join(foo)
+    
+# Remove foo
+rm(foo)
+```
+
 ----
+
+Although there are small variations in the number of missing data across BPI items, the first item on the BDI assesses whether the participant has pain at the time of completing the questionniare (`Pain_present`), and it will be used as a proxy of missing data across all other items. 
+
+Note that `Average_pain` values are greater because average pain data were not recorded at the _R1_ site (n = 47).
+
+----
+
+# Clean BPI data
+
+```{r prep_clean}
+
+# Select for Week 8  
+    bpi %<>% select(ID,
+                    Pain_present.Wk8)
+
+bpi %<>%
+    # Code whether data in bdi_rating is missing or not
+    mutate(coding = ifelse(is.na(Pain_present.Wk8), 
+                           yes = 'Data missing',
+                           no = 'Data available'))
+    
+```
+
+# Bind data frames together
+
+```{r bind}
+
+df <- income_stability %>% right_join(bpi)
+
+df_mosaic <- xtabs(~ income_stability + coding, data = df)
+
+foo <- mosaicplot(prop.table((df_mosaic), 1))
+
+fisher.test(df_mosaic)
+
+df %<>% mutate(site_type =
+                   case_when(
+                       str_detect(Site, "U") ~ "urban",
+                       str_detect(Site, "R") ~ "rural"))
+
+df_mosaic2 <- xtabs(~ income_stability + coding + site_type, data = df)
+df_mosaic2
+
+ftable(df_mosaic2)
+
+```
+
+----
+Conclusion: unlikely to be a meaningful relationships between income stability and loss to follow-up at 8 weeks (2 weeks post-intervention).
+----
+# BDI as a predictor
+
+```{r bdi}
+# Import bdi data
+
+bdi <- read_rds('./data/bdi.rds')
+
+# Calculate baseline total
+
+bdi %<>% select(ID,
+                ends_with("BL"))
+                
+bdi %<>% mutate_at(.vars = 2:22,.funs = as.integer) %>%
+                        mutate(totalBL = rowSums(.[2:22])) %>%
+    select(ID, totalBL)
+
+df %<>% left_join(bdi)
+
+# Convert total BDI scores into categories
+
+df %<>% mutate(bdi_category = case_when(
+    Site == "J1" & totalBL <  14 ~ "none_minimal",
+    Site == "J1" & totalBL > 13 & totalBL < 20 ~ "mild",
+    Site == "J1" & totalBL > 19 & totalBL < 29 ~ "moderate-severe",
+    Site == "J1" & totalBL > 28 ~ "severe",
+    Site != "J1" & totalBL <  11 ~ "none-minimal",
+    Site != "J1" & totalBL > 9 & totalBL < 19 ~ "mild",
+    Site != "J1" & totalBL > 18 & totalBL < 30 ~ "moderate-severe",
+    Site != "J1" & totalBL > 29 ~ "severe"))
+
+df %<>% mutate(bdi_category = factor(bdi_category, levels = c("none-minimal", "mild", "moderate-severe", "severe"), ordered = TRUE))
+
+table <- xtabs(~ bdi_category + coding, data = df)
+table
+
+mosaicplot(table)
+
+logit <- glm(factor(coding) ~ bdi_category, data = df, family = binomial("logit"))
+summary(logit)
+
+# Find stats for reporting (lack of) main effect
+car::Anova(logit, type = 2)
+
+```
+
+# Group allocation as a predictor
+
+```{r group}
+
+group_table <- xtabs(~ Group + coding, data = df)
+
+trial <- mosaicplot(group_table)
+
+goo <- mosaicplot(prop.table((group_table), 1))
+
+```
+
+# Sex as a predictor
+
+```{r sex}
+
+group_table <- xtabs(~ Sex + coding, data = df)
+
+trial <- mosaicplot(group_table)
+
+goo <- mosaicplot(prop.table((group_table), 1))
+
+fisher.test(group_table)
+
+```
+
+# Conclusion
+
+Income stability, sex and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01).
 
 # Session information
 
