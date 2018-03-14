@@ -1,0 +1,97 @@
+---
+title: "HIP: Dropout predictors"
+subtitle: "Do baseline employment and/or depression predict dropout by 8 weeks?"
+author: "Peter Kamerman and Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: 
+    html_document:
+        theme: yeti
+        keep_md: true
+        highlight: pygments
+        toc: true
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(tidyverse)
+library(skimr)
+
+# Set ggplot2 theme
+theme_set(new = theme_bw(base_size = 14))
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.retina = 2,
+                      fig.align = 'center',
+                      fig.path = 'figures/dropout_predictors/',
+                      fig.width = 7,
+                      fig.height = 7)
+```
+
+----
+
+Recoding of occupation
+
+----
+
+# Import data
+
+```{r import_data}
+# Get data
+demo <- read_rds('./data/demographics.rds')
+```
+
+----
+
+# Quick look
+
+```{r quick_look}
+glimpse(demo)
+
+```
+
+----
+
+# Recode employment
+
+```{r recode_employment}
+# Mutate new column to reclassify employment status into income grouping
+
+demo %<>%
+    mutate(income_stability = case_when(
+        Occupation == "employed" | Occupation == "unable to work - disability grant" ~ "stable income",
+        Occupation == "student/volunteer" | Occupation == "unemployed - looking for work" | Occupation == "unemployed - not looking for work" ~ "unstable or no income",
+        Occupation == "NA" ~ "NA"))
+
+count <- demo %>% group_by(income_stability) %>%
+    summarise(count = n())
+print(count)
+```
+
+----
+
+# Tidy up and save as rds
+
+```{r tidy_save}
+
+demo %<>% select(ID,
+                 income_stability)
+
+# Save outputs
+write_rds(x = demo, 
+          path = './data/income_data.rds')
+write_csv(x = demo,
+          path = './data/income_data.csv')
+
+```
+
+----
+
+# Session information
+
+```{r session_info, echo = FALSE}
+sessionInfo()
+```
