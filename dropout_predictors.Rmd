@@ -203,6 +203,9 @@ summary(logit)
 # Find stats for reporting (lack of) main effect
 car::Anova(logit, type = 2)
 
+exp(coef(logit))
+exp(confint(logit))
+
 ```
 
 # Group allocation as a predictor
@@ -233,7 +236,7 @@ fisher.test(group_table)
 
 # Conclusion
 
-Income stability, sex and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01).
+Income stability, sex and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).
 
 # Session information
 
