@@ -1,0 +1,1053 @@
+---
+title: "HIP: EQ5D"
+subtitle: "Descriptive analyses"
+author: "Peter Kamerman and Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+    html_document:
+        theme: yeti
+        keep_md: true
+        highlight: pygments
+        df_print: paged
+        toc: true
+        toc_float: true
+        code_folding: show
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(tidyverse)
+library(magrittr)
+
+# Set ggplot2 theme
+theme_set(new = theme_bw(base_size = 14))
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.retina = 2,
+                      fig.align = 'center',
+                      fig.path = 'figures/eq5d-analysis/',
+                      fig.width = 9,
+                      fig.height = 7)
+```
+
+----
+
+A descriptive analysis of the Brief Pain Inventory. The analysis includes descriptions of missing data and provides numerical summaries of questionniare statements related to whether pain was present at the time of assessment, pain intensity, and pain interference. Statements covering whether analgesics were being used, and the percentage pain relief obtained from these drugs were not analysed.
+
+----
+
+## Import data
+```{r data_import, results = 'hide'}
+# Read in data
+eq5d <- readr::read_rds('./data/eq5d.rds') %>%
+    arrange(ID) %>%
+    mutate(ID = stringr::str_to_lower(ID))
+
+# For site and group info
+foo <- readr::read_rds('./data/demographics.rds') %>%
+    select(ID, Site, Group, Sex) %>%
+    rename(ID2 = ID) %>%
+    arrange(ID2)
+
+# Join the two datasets 
+eq5d <- foo %>%
+    bind_cols(eq5d) %>%
+    rowwise() %>%
+    mutate(ID_match = ifelse(ID2 == ID,
+                             yes = TRUE,
+                             no = FALSE))
+
+# Check for mismatches from join
+nrow(filter(eq5d, ID_match == FALSE))
+
+# Eliminate extra ID column
+eq5d <- eq5d %>%
+    select(-ID,
+           -ID_match) %>%
+    rename(ID = ID2)
+```
+
+## Quick look
+```{r quick_look}
+glimpse(eq5d)
+head(eq5d)
+tail(eq5d)
+```
+
+## EQ5D index score
+### Process data
+```{r eq5d_organise, results = 'hide'}
+# Calculate eq5d index score for each time point
+# Create basic term = 1 for all cases in new column
+eq5d$index_core <- 1
+
+# Baseline #
+############
+# Pull out only BL data to new data frame for BL
+BL_index <- select(eq5d, contains("BL"))
+
+# Delete SOH column
+BL_index <- BL_index %>%
+    select(-(contains("SOH")))
+
+# Sum all rows for total BL index score and allocate to a new column in eq5d data frame 
+eq5d$BL_index_sum <- rowSums(BL_index)
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d <- eq5d %>% mutate(BL_constant_index = ifelse(BL_index_sum > 5, yes = 0.081, no = 0))
+
+# Week 4 #
+##########
+# Pull out only Wk4 data to new data frame for Wk4
+Wk4_index <- select(eq5d, contains("Wk4"))
+
+# Delete SOH column
+Wk4_index <- Wk4_index %>%
+    select(-(contains("SOH")))
+
+# Sum all rows for total Wk4 index score and allocate to a new column in eq5d data frame 
+eq5d$Wk4_index_sum <- rowSums(Wk4_index)
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d <- eq5d %>% mutate(Wk4_constant_index = ifelse(Wk4_index_sum > 5, 
+                                                    yes = 0.081, 
+                                                    no = 0))
+
+# Week 8 #
+##########
+# Pull out only Wk8 data to new data frame for Wk8
+Wk8_index <- select(eq5d, contains("Wk8"))
+
+# Delete SOH column
+Wk8_index <- Wk8_index %>%
+    select(-(contains("SOH")))
+
+# Sum all rows for total Wk8 index score and allocate to a new column in eq5d data frame   
+eq5d$Wk8_index_sum <- rowSums(Wk8_index)
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d <- eq5d %>% mutate(Wk8_constant_index = ifelse(Wk8_index_sum > 5, 
+                                                    yes = 0.081, 
+                                                    no = 0))
+
+# Week 12 #
+###########
+# Pull out only Wk8 data to new data frame for Wk12
+Wk12_index <- select(eq5d, contains("Wk12"))
+
+# Delete SOH column
+Wk12_index <- Wk12_index %>%
+    select(-(contains("SOH")))
+
+# Sum all rows for total Wk12 index score and allocate to a new column in eq5d data frame  
+eq5d$Wk12_index_sum <- rowSums(Wk12_index)
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d <- eq5d %>% mutate(Wk12_constant_index = ifelse(Wk12_index_sum > 5, 
+                                                     yes = 0.081, 
+                                                     no = 0))
+
+# Week 24 #
+###########
+# Pull out only Wk24 data to new data frame for Wk24
+Wk24_index <- select(eq5d, contains("Wk24"))
+
+# Delete SOH column
+Wk24_index <- Wk24_index %>%
+    select(-(contains("SOH")))
+
+# Sum all rows for total Wk24 index score and allocate to a new column in eq5d data frame  
+eq5d$Wk24_index_sum <- rowSums(Wk24_index)
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d <- eq5d %>% mutate(Wk24_constant_index = ifelse(Wk24_index_sum > 5, 
+                                                     yes = 0.081, 
+                                                     no = 0))
+
+# Week 48 #
+###########
+# Pull out only Wk48 data to new data frame for Wk48
+Wk48_index <- select(eq5d, contains("Wk48"))
+
+# Delete SOH column
+Wk48_index <- Wk48_index %>%
+    select(-(contains("SOH")))
+
+# Sum all rows for total Wk48 index score and allocate to a new column in eq5d data frame
+eq5d$Wk48_index_sum <- rowSums(Wk48_index)
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d <- eq5d %>% mutate(Wk48_constant_index = ifelse(Wk48_index_sum > 5, 
+                                                     yes = 0.081, 
+                                                     no = 0))
+
+# 1. Create variable for subtraction for each domain and time point: 
+# Call it (for example) BL_Mobility_index
+# Use values from table in an ifelse statement
+# THEN
+# 2. Compute the index score for each time point using: 
+# BL_index_score = index_core - constant_index - BL_Mobility_index - (etc - for each domain).
+
+# Baseline #
+############
+eq5d <- eq5d %>% mutate(BL_Mobility_index = ifelse(Mobility_BL == 2, 
+                                                   yes = 0.069,
+                                                   no = ifelse(Mobility_BL == 3, 
+                                                               yes = 0.314,
+                                                               no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_Self_care_index = ifelse(Self_care_BL == 2, 
+                                                   yes = 0.104,
+                                                   no = ifelse(Self_care_BL == 3, 
+                                                               yes = 0.214,
+                                                               no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_Usual_act_index = ifelse(Usual_act_BL == 2, 
+                                                  yes = 0.036,
+                                                  no = ifelse(Usual_act_BL == 3, 
+                                                              yes = 0.094,
+                                                              no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_EQ_Pain_index = ifelse(EQ_Pain_BL == 2, 
+                                                    yes = 0.123,
+                                                    no = ifelse(EQ_Pain_BL == 3, 
+                                                                yes = 0.386,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_Anx_depr_index = ifelse(Anx_depr_BL == 2, 
+                                                    yes = 0.071,
+                                                    no = ifelse(Anx_depr_BL == 3, 
+                                                                yes = 0.236,
+                                                                no = 0)))
+
+# Index score
+eq5d <- eq5d %>% mutate(BL_index_score = index_core - BL_constant_index - BL_Mobility_index - BL_Self_care_index - BL_Usual_act_index - BL_EQ_Pain_index - BL_Anx_depr_index)
+
+# Week 4 #
+##########
+eq5d <- eq5d %>% mutate(Wk4_Mobility_index = ifelse(Mobility_Wk4 == 2, 
+                                                    yes = 0.069,
+                                                    no = ifelse(Mobility_Wk4 == 3, 
+                                                                yes = 0.314,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk4_Self_care_index = ifelse(Self_care_Wk4 == 2, 
+                                                     yes = 0.104,
+                                                     no = ifelse(Self_care_Wk4 == 3, 
+                                                                 yes = 0.214,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk4_Usual_act_index = ifelse(Usual_act_Wk4 == 2, 
+                                                     yes = 0.036,
+                                                     no = ifelse(Usual_act_Wk4 == 3, 
+                                                                 yes = 0.094,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk4_EQ_Pain_index = ifelse(EQ_Pain_Wk4 == 2, 
+                                                   yes = 0.123,
+                                                   no = ifelse(EQ_Pain_Wk4 == 3, 
+                                                               yes = 0.386,
+                                                               no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk4_Anx_depr_index = ifelse(Anx_depr_Wk4 == 2, 
+                                                    yes = 0.071,
+                                                    no = ifelse(Anx_depr_Wk4 == 3, 
+                                                                yes = 0.236,
+                                                                no = 0)))
+
+# Index score
+eq5d <- eq5d %>% mutate(Wk4_index_score = index_core - Wk4_constant_index - Wk4_Mobility_index - Wk4_Self_care_index - Wk4_Usual_act_index - Wk4_EQ_Pain_index - Wk4_Anx_depr_index)
+
+# Week 8 #
+##########
+eq5d <- eq5d %>% mutate(Wk8_Mobility_index = ifelse(Mobility_Wk8 == 2, 
+                                                    yes = 0.069,
+                                                    no = ifelse(Mobility_Wk8 == 3, 
+                                                                yes = 0.314,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk8_Self_care_index = ifelse(Self_care_Wk8 == 2, 
+                                                     yes = 0.104,
+                                                     no = ifelse(Self_care_Wk8 == 3, 
+                                                                 yes = 0.214,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk8_Usual_act_index = ifelse(Usual_act_Wk8 == 2, 
+                                                     yes = 0.036,
+                                                     no = ifelse(Usual_act_Wk8 == 3, 
+                                                                 yes = 0.094,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk8_EQ_Pain_index = ifelse(EQ_Pain_Wk8 == 2, 
+                                                   yes = 0.123,
+                                                   no = ifelse(EQ_Pain_Wk8 == 3, 
+                                                               yes = 0.386,
+                                                               no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk8_Anx_depr_index = ifelse(Anx_depr_Wk8 == 2, 
+                                                    yes = 0.071,
+                                                    no = ifelse(Anx_depr_Wk8 == 3, 
+                                                                yes = 0.236,
+                                                                no = 0)))
+
+# Index score
+eq5d <- eq5d %>% mutate(Wk8_index_score = index_core - Wk8_constant_index - Wk8_Mobility_index - Wk8_Self_care_index - Wk8_Usual_act_index - Wk8_EQ_Pain_index - Wk8_Anx_depr_index)
+
+# Week 12 #
+###########
+eq5d <- eq5d %>% mutate(Wk12_Mobility_index = ifelse(Mobility_Wk12 == 2, 
+                                                     yes = 0.069,
+                                                     no = ifelse(Mobility_Wk12 == 3, 
+                                                                 yes = 0.314,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk12_Self_care_index = ifelse(Self_care_Wk12 == 2, 
+                                                      yes = 0.104,
+                                                      no = ifelse(Self_care_Wk12 == 3, 
+                                                                  yes = 0.214,
+                                                                  no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk12_Usual_act_index = ifelse(Usual_act_Wk12 == 2, 
+                                                      yes = 0.036,
+                                                      no = ifelse(Usual_act_Wk12 == 3, 
+                                                                  yes = 0.094,
+                                                                  no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk12_EQ_Pain_index = ifelse(EQ_Pain_Wk12 == 2, 
+                                                    yes = 0.123,
+                                                    no = ifelse(EQ_Pain_Wk12 == 3, 
+                                                                yes = 0.386,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk12_Anx_depr_index = ifelse(Anx_depr_Wk12 == 2, 
+                                                     yes = 0.071,
+                                                     no = ifelse(Anx_depr_Wk12 == 3, 
+                                                                 yes = 0.236,
+                                                                 no = 0)))
+
+
+# Index score
+eq5d <- eq5d %>% mutate(Wk12_index_score = index_core - Wk12_constant_index - Wk12_Mobility_index - Wk12_Self_care_index - Wk12_Usual_act_index - Wk12_EQ_Pain_index - Wk12_Anx_depr_index)
+
+# Week 24 #
+###########
+eq5d <- eq5d %>% mutate(Wk24_Mobility_index = ifelse(Mobility_Wk24 == 2, 
+                                                     yes = 0.069,
+                                                     no = ifelse(Mobility_Wk24 == 3, 
+                                                                 yes = 0.314,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk24_Self_care_index = ifelse(Self_care_Wk24 == 2, 
+                                                      yes = 0.104,
+                                                      no = ifelse(Self_care_Wk24 == 3, 
+                                                                  yes = 0.214,
+                                                                  no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk24_Usual_act_index = ifelse(Usual_act_Wk24 == 2, 
+                                                      yes = 0.036,
+                                                      no = ifelse(Usual_act_Wk24 == 3, 
+                                                                  yes = 0.094,
+                                                                  no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk24_EQ_Pain_index = ifelse(EQ_Pain_Wk24 == 2, 
+                                                    yes = 0.123,
+                                                    no = ifelse(EQ_Pain_Wk24 == 3, 
+                                                                yes = 0.386,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk24_Anx_depr_index = ifelse(Anx_depr_Wk24 == 2, 
+                                                     yes = 0.071,
+                                                     no = ifelse(Anx_depr_Wk24 == 3, 
+                                                                 yes = 0.236,
+                                                                 no = 0)))
+
+
+# Index score
+eq5d <- eq5d %>% mutate(Wk24_index_score = index_core - Wk24_constant_index - Wk24_Mobility_index - Wk24_Self_care_index - Wk24_Usual_act_index - Wk24_EQ_Pain_index - Wk24_Anx_depr_index)
+
+# Week 48 #
+###########
+eq5d <- eq5d %>% mutate(Wk48_Mobility_index = ifelse(Mobility_Wk48 == 2, 
+                                                     yes = 0.069,
+                                                     no = ifelse(Mobility_Wk48 == 3, 
+                                                                 yes = 0.314,
+                                                                 no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk48_Self_care_index = ifelse(Self_care_Wk48 == 2, 
+                                                      yes = 0.104,
+                                                      no = ifelse(Self_care_Wk48 == 3, 
+                                                                  yes = 0.214,
+                                                                  no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk48_Usual_act_index = ifelse(Usual_act_Wk48 == 2, 
+                                                      yes = 0.036,
+                                                      no = ifelse(Usual_act_Wk48 == 3, 
+                                                                  yes = 0.094,
+                                                                  no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk48_EQ_Pain_index = ifelse(EQ_Pain_Wk48 == 2, 
+                                                    yes = 0.123,
+                                                    no = ifelse(EQ_Pain_Wk48 == 3, 
+                                                                yes = 0.386,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(Wk48_Anx_depr_index = ifelse(Anx_depr_Wk48 == 2, 
+                                                     yes = 0.071,
+                                                     no = ifelse(Anx_depr_Wk48 == 3, 
+                                                                 yes = 0.236,
+                                                                 no = 0)))
+
+
+# Index score
+eq5d <- eq5d %>% mutate(Wk48_index_score = index_core - Wk48_constant_index - Wk48_Mobility_index - Wk48_Self_care_index - Wk48_Usual_act_index - Wk48_EQ_Pain_index - Wk48_Anx_depr_index)
+
+# Check
+glimpse(eq5d)
+
+# Create smaller data frame with index data only
+eq5d_index <- eq5d %>%
+    select(ID, Site, Group, Sex, contains("index_score"))
+
+# Gather from wide format into long format
+eq5d_index <- eq5d_index %>%
+    tidyr::gather(key = Week,
+                  value = Score,
+                  -ID, - Site, - Group, -Sex)
+
+# Separate column labels to convert to numbers
+# Separate at underscore, delete Text column, convert to character
+eq5d_index <- tidyr::separate(data = eq5d_index,
+                              col = Week,
+                              into = c('Week', 'Text'))
+
+eq5d_index <- eq5d_index %>% select(-Text)
+
+eq5d_index <- mutate(eq5d_index,
+                     Week = as.character(Week))
+
+# Replace values
+eq5d_index[eq5d_index=="BL"] <- "BL0"
+
+# Separate after 2 characters
+eq5d_index <- tidyr::separate(data = eq5d_index,
+                              col = Week,
+                              into = c('Text', 'Week'), 2)
+
+head(eq5d_index)
+
+# Convert back into numeric form and delete Text column
+eq5d_index <- mutate(eq5d_index,
+                     Week = as.numeric(Week))
+
+eq5d_index <- eq5d_index %>% select(-Text)
+
+# Check data
+glimpse(eq5d_index)
+```
+
+### Plots
+#### Spaghetti plots
+```{r eq5d_index_spag_plots}
+ggplot(data = eq5d_index) +
+    aes(x = Week,
+        y = Score,
+        group = ID) %>%
+    geom_line() +
+    labs(title = 'EQ5D index score', 
+         subtitle = 'All participants, all sites')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index) +
+    aes(x = Week,
+        y = Score,
+        colour = Site,
+        group = ID) %>%
+    geom_line() +
+    labs(title = 'EQ5D index score', 
+         subtitle = 'Coloured by Site')+ 
+    theme(legend.position = 'right') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D index score', 
+         subtitle = 'Faceted by study site, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Site ~ Sex) +
+    labs(title = 'EQ5D index score', 
+         subtitle = 'Faceted by study site and gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+# Separate sites
+eq5d_index_J <- eq5d_index %>% filter(str_detect(Site, "u1"))
+eq5d_index_M <- eq5d_index %>% filter(str_detect(Site, "r1"))
+eq5d_index_R <- eq5d_index %>% filter(str_detect(Site, "u2"))
+eq5d_index_Z <- eq5d_index %>% filter(str_detect(Site, "r2"))
+
+ggplot(data = eq5d_index_J) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site J: EQ5D index score', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_J) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line(size = 0.3, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site J: EQ5D index score WITH jitter added', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_J) +
+    aes(x = Week,
+        y = Score,
+        group = ID,
+        colour = Group) %>%
+    geom_line() +
+    geom_point(aes(x = Week,
+                   y = Score,
+                   colour = Group)) +
+    labs(title = 'Site J: EQ5D index score', 
+         subtitle = 'Faceted by gender, coloured by Group')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_M) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site M: EQ5D index score', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_M) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line(size = 0.3, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site M: EQ5D index score WITH jitter added', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_R) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line() +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site R: EQ5D index score', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_R) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line(size = 0.3, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site R: EQ5D index score WITH jitter added', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_Z) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line(size = 0.3, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site Z: EQ5D index score', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+
+ggplot(data = eq5d_index_Z) +
+    aes(x = Week,
+        y = Score,
+        colour = ID) %>%
+    geom_line(size = 0.3, 
+              position = position_jitterdodge(jitter.height = 0.02, dodge.width = 0.2)) +
+    facet_grid(Sex ~ .) +
+    labs(title = 'Site Z: EQ5D index score WITH jitter added', 
+         subtitle = 'Faceted by gender, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(-0.6,-0.3,0,0.3,0.6,0.9,1))
+```
+
+#### Summary plots
+```{r eq5d_index_summary_plots}
+# By group
+ggplot(data = eq5d_index) +
+    aes(x = as.factor(Week), # Reclassify 'Week' from numeric to factor
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Coloured by group')
+
+ggplot(data = eq5d_index) +
+    aes(x = as.factor(Week),
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Faceted by study site, coloured by group')
+
+# Collapse across groups and look at sites:
+ggplot(data = eq5d_index) +
+    aes(x = as.factor(Week),
+        y = Score,
+        colour = Site,
+        fill = Site) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'All groups, coloured by study site')
+
+eq5d_index %>% 
+    filter(Site == "u1") %>%
+    mutate(Week = as.factor(Week)) %>% # Reclassify 'Week' from numeric to factor 
+    ggplot(.) +
+    aes(x = Week,
+        y = Score,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Site J, coloured by gender')
+
+eq5d_index %>% 
+    filter(Site == "u1") %>%
+    mutate(Week = as.factor(Week)) %>% # Reclassify 'Week' from numeric to factor
+    ggplot(.) +
+    aes(x = Week,
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    facet_grid(Sex ~ .) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Site J, coloured by group, faceted by gender')
+
+# By site:
+eq5d_index %>% 
+    filter(Site == "u1") %>%
+    mutate(Week = as.factor(Week)) %>% # Reclassify 'Week' from numeric to factor
+    ggplot(.) +
+    aes(x = Week, 
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'Site J: EQ5D State of Health', 
+         subtitle = 'Coloured by group')
+
+eq5d_index %>% 
+    filter(Site == "r1") %>%
+    mutate(Week = as.factor(Week)) %>% # Reclassify 'Week' from numeric to factor
+    ggplot(.) +
+    aes(x = Week, 
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'Site M: EQ5D State of Health', 
+         subtitle = 'Coloured by group')
+
+eq5d_index %>% 
+    filter(Site == "u2") %>%
+    mutate(Week = as.factor(Week)) %>% # Reclassify 'Week' from numeric to factor
+    ggplot(.) +
+    aes(x = Week, 
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'Site R: EQ5D State of Health', 
+         subtitle = 'Coloured by group')
+
+eq5d_index %>% 
+    filter(Site == "r2") %>%
+    mutate(Week = as.factor(Week)) %>% # Reclassify 'Week' from numeric to factor
+    ggplot(.) +
+    aes(x = Week, 
+        y = Score,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    scale_colour_brewer(palette = "Set1") +
+    scale_fill_brewer(palette = "Set1") +
+    labs(title = 'Site Z: EQ5D State of Health', 
+         subtitle = 'Coloured by group')
+```
+
+## EQ5D state of health 
+(Not too much on it because it is misunderstood)
+```{r eq5d_soh}
+# Create plots for EQ5D VAS: State Of Health scale
+eq5d_SOH <- select(eq5d,ID, Site, Group, Sex, starts_with('SOH'))
+
+# Gather from wide format into long format
+eq5d_SOH <- eq5d_SOH %>%
+    tidyr::gather(key = time_point,
+                  value = VAS_rating,
+                  -ID, - Site, - Group, -Sex)
+
+# Create new column with time
+eq5d_SOH <- eq5d_SOH %>% 
+    mutate(Week = case_when(
+        stringr::str_detect(.$time_point, "Wk48")  ~ 48,
+        stringr::str_detect(.$time_point, "BL")  ~ 0,
+        stringr::str_detect(.$time_point, "Wk4$")  ~ 4,
+        stringr::str_detect(.$time_point, "Wk8")  ~ 8,
+        stringr::str_detect(.$time_point, "Wk12")  ~ 12,
+        stringr::str_detect(.$time_point, "Wk24")  ~ 24
+    ))
+
+# Delete time_point column
+eq5d_SOH <- eq5d_SOH %>% select(-time_point)
+```
+
+### Plots
+#### Spaghetti plots
+```{r eq5d_soh_spag_plots}
+ggplot(data = eq5d_SOH) +
+    aes(x = Week,
+        y = VAS_rating,
+        colour = ID,
+        group = ID
+       ) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(dodge.width = 0.2)) + 
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Faceted by study site, coloured by ID')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,20,40,60,100))
+
+ggplot(data = eq5d_SOH,
+    aes(x = Week,
+        y = VAS_rating,
+        group = ID,
+        colour = Group)) +
+    geom_line(size = 0.5,
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    geom_point(aes(shape = Group),
+               size = 1) + 
+    scale_colour_brewer(palette = "Set1") +
+    scale_shape_manual(values = c(22,24,21)) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Faceted by study site, coloured by group')+ 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(0,20,40,60,80,100))
+```
+
+#### Summary plots
+```{r eq5d_soh_summary_plots}
+ggplot(data = eq5d_SOH) +
+    aes(x = as.factor(Week),
+        y = VAS_rating,
+        colour = Group,
+        fill = Group) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Faceted by study site, coloured by group')
+
+ggplot(data = eq5d_SOH) +
+    aes(x = as.factor(Week),
+        y = VAS_rating,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Group ~ .) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Faceted by study group, coloured by sex')
+
+ggplot(data = eq5d_SOH) +
+    aes(x = as.factor(Week),
+        y = VAS_rating,
+        colour = Sex,
+        fill = Sex) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ Group) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Faceted by study site and group,\ncoloured by sex')
+
+ggplot(data = filter(eq5d_SOH, Sex == 'female')) +
+    aes(x = as.factor(Week),
+        y = VAS_rating) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'EQ5D State of Health',
+         subtitle = 'Women only')
+
+ggplot(data = filter(eq5d_SOH, Sex == 'female' & Site != 'u1')) +
+    aes(x = as.factor(Week),
+        y = VAS_rating) %>%
+    geom_boxplot(alpha = 0.6) +
+    labs(title = 'EQ5D State of Health', 
+         subtitle = 'Women only (excluding U1)')
+```
+
+## EQ5D domains
+```{r eq5d_domains}
+# Remove data for index and SOH
+eq5d_domains <- eq5d[, -grep("index", colnames(eq5d))]
+
+eq5d_domains <- eq5d_domains[, -grep("SOH", colnames(eq5d))]
+
+# Gather from wide format into long format
+eq5d_tot <- eq5d_domains %>%
+    tidyr::gather(key = eq5d_question,
+                  value = eq5d_rating,
+                  -ID, - Site, - Group, -Sex)
+
+# Create new column with time
+eq5d_tot <- eq5d_tot %>% 
+    mutate(Week = case_when(
+        stringr::str_detect(.$eq5d_question, "Wk48")  ~ 48,
+        stringr::str_detect(.$eq5d_question, "BL")  ~ 0,
+        stringr::str_detect(.$eq5d_question, "Wk4$")  ~ 4,
+        stringr::str_detect(.$eq5d_question, "Wk8")  ~ 8,
+        stringr::str_detect(.$eq5d_question, "Wk12")  ~ 12,
+        stringr::str_detect(.$eq5d_question, "Wk24")  ~ 24
+    ))
+
+# Create new column with domain
+eq5d_tot <- eq5d_tot %>% 
+    mutate(Domain = case_when(
+        stringr::str_detect(.$eq5d_question, "Mobility")  ~ "Mobility",
+        stringr::str_detect(.$eq5d_question, "Self")  ~ "Self-care",
+        stringr::str_detect(.$eq5d_question, "Usual")  ~ "Usual activities",
+        stringr::str_detect(.$eq5d_question, "Pain")  ~ "Pain",
+        stringr::str_detect(.$eq5d_question, "Anx")  ~ "Anxiety-depression"
+    ))
+
+# Make Week numeric 
+eq5d_tot %>% mutate(Week =  as.numeric(Week))
+
+# Make Group categorical
+eq5d_tot %>% mutate(Group =  as.numeric(Group))
+```
+
+### Plots
+#### Spaghetti plots
+```{r eq5d_domains_spag_plots}
+ggplot(data = eq5d_tot) +
+    aes(x = Week,
+        y = eq5d_rating,
+        group = ID,
+        colour = Domain) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Site ~ Domain) +
+    labs(title = 'EQ5D Domains', 
+         subtitle = 'Faceted by study site and domain, coloured by domain') + 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48))
+
+# Consider Mobility only
+eq5d_mobility <- select(eq5d_domains, ID, Site, Group, Sex, contains("Mobility"))
+eq5d_mobility <- eq5d_mobility %>%
+    tidyr::gather(key = eq5d_question,
+                  value = eq5d_rating,
+                  -ID, - Site, - Group, -Sex)
+
+# Create new column with time
+eq5d_mobility <- eq5d_mobility %>% 
+    mutate(Week = case_when(
+        stringr::str_detect(.$eq5d_question, "Wk48")  ~ 48,
+        stringr::str_detect(.$eq5d_question, "BL")  ~ 0,
+        stringr::str_detect(.$eq5d_question, "Wk4$")  ~ 4,
+        stringr::str_detect(.$eq5d_question, "Wk8")  ~ 8,
+        stringr::str_detect(.$eq5d_question, "Wk12")  ~ 12,
+        stringr::str_detect(.$eq5d_question, "Wk24")  ~ 24
+    ))
+
+ggplot(data = eq5d_mobility) +
+    aes(x = Week,
+        y = eq5d_rating,
+        group = ID,
+        colour = ID) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D Mobility', 
+         subtitle = 'Faceted by study site, coloured by ID') + 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(3,2,1))
+
+ggplot(data = filter(eq5d_tot, Domain == 'Self-care')) +
+    aes(x = Week,
+        y = eq5d_rating,
+        group = ID,
+        colour = ID) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(jitter.height = 0.1, dodge.width = 0.2)) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D Self-care', 
+         subtitle = 'Faceted by study site, coloured by ID') + 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48)) +
+    scale_y_continuous(breaks = c(3,2,1))
+
+ggplot(data = filter(eq5d_tot, Domain == 'Usual activities')) +
+    aes(x = Week,
+        y = eq5d_rating,
+        group = ID,
+        colour = ID) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D Usual activities', 
+         subtitle = 'Faceted by study site, coloured by ID') + 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48))
+
+eq5d_tot %>% 
+    filter(Domain == "Pain") %>%
+    ggplot(.) +
+    aes(x = Week,
+        y = eq5d_rating,
+        group = ID,
+        colour = ID) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D Pain', 
+         subtitle = 'Faceted by study site, coloured by ID') + 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48))
+
+eq5d_tot %>% 
+    filter(Domain == "Anxiety-depression") %>%
+    ggplot(.) +
+    aes(x = Week,
+        y = eq5d_rating,
+        group = ID,
+        colour = ID) %>%
+    geom_line(size = 0.2, 
+              position = position_jitterdodge(dodge.width = 0.2)) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D Anxiety-depression', 
+         subtitle = 'Faceted by study site, coloured by ID') + 
+    theme(legend.position = 'none') +
+    scale_x_continuous(breaks = c(0,4,8,12,24,48),
+                       limits = c(0, 48))
+```
+
+#### Summary plots
+```{r eq5d_domain_summary_plots}
+ggplot(data = eq5d_tot) +
+    aes(x = as.factor(Week),
+        y = eq5d_rating,
+        colour = Domain,
+        fill = Domain) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ .) +
+    labs(title = 'EQ5D Domains', 
+         subtitle = 'Faceted by study site, coloured by domain')
+
+ggplot(data = eq5d_tot) +
+    aes(x = as.factor(Week),
+        y = eq5d_rating,
+        colour = Domain,
+        fill = Domain) %>%
+    geom_boxplot(alpha = 0.6) +
+    facet_grid(Site ~ Domain) +
+    labs(title = 'EQ5D Domains', 
+         subtitle = 'Faceted by study site and domain')
+```
+
+## Session information
+```{r session_info}
+sessionInfo()
+```
