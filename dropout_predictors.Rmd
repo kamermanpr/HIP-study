@@ -1,6 +1,6 @@
 ---
 title: "HIP: Dropout predictors"
-subtitle: "Do baseline employment and/or depression predict dropout by 8 weeks?"
+subtitle: "Do baseline employment and/or depression predict dropout by week 8?"
 author: "Peter Kamerman and Tory Madden"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 output: 
@@ -17,10 +17,10 @@ editor_options:
 
 ```{r setup, include = FALSE}
 # Load packages
-library(tidyverse)
-library(skimr)
-library(coin)
 library(magrittr)
+library(tidyverse)
+library(broom)
+library(coin)
 
 # Set ggplot2 theme
 theme_set(new = theme_bw(base_size = 14))
@@ -30,10 +30,14 @@ knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
                       fig.retina = 2,
                       fig.align = 'center',
-                      fig.path = 'figures/dropout_predictors/',
+                      fig.path = 'figures/dropout-predictors/',
                       fig.width = 7,
                       fig.height = 7)
 ```
+
+----
+
+We assessed two predictors of dropout (employment/stable income, depression) from the study at week 8, with week 8 being two weeks after the completion on the 6 week programme. 
 
 ----
 
@@ -41,7 +45,17 @@ knitr::opts_chunk$set(warning = FALSE,
 
 ```{r import_data}
 # Get data
-demo <- read_rds('./data/demographics.rds')
+## BPI
+bpi <- read_rds('data/bpi.rds') %>% 
+    select(ID, Pain_present.Wk8)
+
+## Demographics
+demo <- read_rds('data/demographics.rds') %>% 
+    select(ID, Site, Group, Sex, Occupation)
+
+## BDI
+bdi <- read_rds('data/bdi.rds') %>% 
+    select(ID, ends_with('BL'))
 ```
 
 ----
@@ -49,194 +63,277 @@ demo <- read_rds('./data/demographics.rds')
 # Quick look
 
 ```{r quick_look}
+glimpse(bpi)
 glimpse(demo)
-
+glimpse(bdi)
 ```
 
 ----
 
-# Recode employment
+# Clean data
 
-```{r recode_employment}
-# Mutate new column to reclassify employment status into income grouping
-
-demo %<>%
-    mutate(income_stability = case_when(
-        Occupation == "employed" | Occupation == "unable to work - disability grant" ~ "stable income",
-        Occupation == "student/volunteer" | Occupation == "unemployed - looking for work" | Occupation == "unemployed - not looking for work" ~ "unstable or no income",
-        Occupation == "NA" ~ "NA"))
-
-count <- demo %>% group_by(income_stability) %>%
-    summarise(count = n())
-print(count)
-```
-
-----
-
-# Tidy up and save as rds
-
-```{r tidy_save}
-
-income_stability <- demo %>% select(ID,
-                 income_stability,
-                 Sex,
-                 Site,
-                 Group)
-
-# Save outputs
-write_rds(x = income_stability, 
-          path = './data/income_data.rds')
-write_csv(x = income_stability,
-          path = './data/income_data.csv')
-
-```
-
-# Import BPI data
-
-```{r data_bpi}
-# Read in bpi data
-bpi <- read_rds('./data/bpi.rds') 
-
-# Read in site and group info
-foo <- read_rds('./data/demographics.rds') %>%
-    select(ID, Site, Group, Sex)
-
-# Join the two datasets 
-bpi %<>%
-    left_join(foo)
-    
-# Remove foo
-rm(foo)
-```
-
-----
-
-Although there are small variations in the number of missing data across BPI items, the first item on the BDI assesses whether the participant has pain at the time of completing the questionniare (`Pain_present`), and it will be used as a proxy of missing data across all other items. 
-
-Note that `Average_pain` values are greater because average pain data were not recorded at the _R1_ site (n = 47).
-
-----
-
-# Clean BPI data
-
-```{r prep_clean}
-
-# Select for Week 8  
-    bpi %<>% select(ID,
-                    Pain_present.Wk8)
-
-bpi %<>%
-    # Code whether data in bdi_rating is missing or not
+```{r clean_data}
+############################################################
+#                                                          #
+#                           BPI                            #
+#                                                          #
+############################################################
+# Recode whether there is pain data at week 8  (data completeness)
+bpi %<>% 
+    select(ID, Pain_present.Wk8) %>% 
     mutate(coding = ifelse(is.na(Pain_present.Wk8), 
                            yes = 'Data missing',
-                           no = 'Data available'))
-    
-```
+                           no = 'Data available')) %>% 
+    select(-Pain_present.Wk8)
 
-# Bind data frames together
+############################################################
+#                                                          #
+#                       Demographics                       #
+#                                                          #
+############################################################
+# Mutate new column to reclassify employment status into income grouping
+# Employment status was recoded as stable income (employed or on a grant) 
+# or unstable income (all other categories, including being a student).
+demo %<>%
+    mutate(income_stability = case_when(
+        Occupation == "employed" | 
+            Occupation == "unable to work - disability grant" ~ "Stable income",
+        Occupation == "student/volunteer" | 
+            Occupation == "unemployed - looking for work" | 
+            Occupation == "unemployed - not looking for work" ~ "Unstable or no income"
+        )) %>% 
+    select(ID, Site, Group, Sex, income_stability)
 
-```{r bind}
+# Join with completeness ('bpi') data
+demo %<>% 
+    right_join(bpi)
 
-df <- income_stability %>% right_join(bpi)
+############################################################
+#                                                          #
+#                           BDI                            #
+#                                                          #
+############################################################
+# Calculate BDI total score
+bdi %<>% 
+    mutate_at(.vars = 2:22,
+              .funs = as.integer) %>%
+    mutate(Total.BL = rowSums(.[2:22])) 
 
-df_mosaic <- xtabs(~ income_stability + coding, data = df)
+# Join with demo to get site info
+bdi %<>%
+    left_join(demo) %>%
+    select(ID, Site, Total.BL)
 
-foo <- mosaicplot(prop.table((df_mosaic), 1))
+# Convert total BDI scores into categories 
+## Site U1 used BDI II
+## Site U2, R1, and R2 used BDI I
+bdi %<>% 
+    mutate(bdi_category = case_when(
+    Site == "U1" & Total.BL <  14 ~ "none_minimal",
+    Site == "U1" & Total.BL > 13 & Total.BL < 20 ~ "mild",
+    Site == "U1" & Total.BL > 19 & Total.BL < 29 ~ "moderate-severe",
+    Site == "U1" & Total.BL > 28 ~ "severe",
+    Site != "U1" & Total.BL <  11 ~ "none-minimal",
+    Site != "U1" & Total.BL > 9 & Total.BL < 19 ~ "mild",
+    Site != "U1" & Total.BL > 18 & Total.BL < 30 ~ "moderate-severe",
+    Site != "U1" & Total.BL > 29 ~ "severe"))
 
-fisher.test(df_mosaic)
+# Convert bdi category into an ordered factor
+bdi %<>% mutate(bdi_category = factor(bdi_category, 
+                                      levels = c("none-minimal", 
+                                                 "mild", 
+                                                 "moderate-severe", 
+                                                 "severe"), 
+                                      ordered = TRUE))
+# Drop Site column
+bdi %<>% 
+    select(-Site)
 
-df %<>% mutate(site_type =
-                   case_when(
-                       str_detect(Site, "U") ~ "urban",
-                       str_detect(Site, "R") ~ "rural"))
-
-df_mosaic2 <- xtabs(~ income_stability + coding + site_type, data = df)
-df_mosaic2
-
-ftable(df_mosaic2)
-
+# Join with completeness ('bpi') data
+bdi %<>% 
+    right_join(bpi)
 ```
 
 ----
-Conclusion: unlikely to be a meaningful relationships between income stability and loss to follow-up at 8 weeks (2 weeks post-intervention).
+
+# Employment/income stability
+
+### Tabulate 
+
+_(no stratification)_
+
+```{r employment_summary}
+demo %>% group_by(income_stability) %>%
+    summarise(count = n()) %>% 
+    knitr::kable(.,
+                 caption = 'Access to stable income',
+                 col.names = c('', 'Count'))
+```
+
+### Null hypothesis significance testing (NHST)
+
+```{r employment_nhst}
+# xtabulate the data
+employ <- xtabs(~ income_stability + coding, 
+                data = demo)
+
+# Produce mosaic plot
+mosaicplot(employ,
+           main = 'Income stability vs data completeness',
+           xlab = '',
+           ylab = '',
+           cex = 1.2, 
+           color = c('#56B4E9', '#E69F00'))
+
+# Fishers exact test
+knitr::kable(tidy(fisher.test(employ)),
+             caption = 'Association between income stability and data completeness',
+             col.names = c('Estimate', 'p-value', 
+                           'Lower 95% CI', 'Upper 95% CI',
+                           'Method', 'Alternative'),
+             digits = 3)
+```
+
 ----
-# BDI as a predictor
 
-```{r bdi}
-# Import bdi data
+# Depression and anxiety
 
-bdi <- read_rds('./data/bdi.rds')
+### Tabulate 
 
-# Calculate baseline total
+_(no stratification)_
 
-bdi %<>% select(ID,
-                ends_with("BL"))
-                
-bdi %<>% mutate_at(.vars = 2:22,.funs = as.integer) %>%
-                        mutate(totalBL = rowSums(.[2:22])) %>%
-    select(ID, totalBL)
-
-df %<>% left_join(bdi)
-
-# Convert total BDI scores into categories
-
-df %<>% mutate(bdi_category = case_when(
-    Site == "J1" & totalBL <  14 ~ "none_minimal",
-    Site == "J1" & totalBL > 13 & totalBL < 20 ~ "mild",
-    Site == "J1" & totalBL > 19 & totalBL < 29 ~ "moderate-severe",
-    Site == "J1" & totalBL > 28 ~ "severe",
-    Site != "J1" & totalBL <  11 ~ "none-minimal",
-    Site != "J1" & totalBL > 9 & totalBL < 19 ~ "mild",
-    Site != "J1" & totalBL > 18 & totalBL < 30 ~ "moderate-severe",
-    Site != "J1" & totalBL > 29 ~ "severe"))
-
-df %<>% mutate(bdi_category = factor(bdi_category, levels = c("none-minimal", "mild", "moderate-severe", "severe"), ordered = TRUE))
-
-table <- xtabs(~ bdi_category + coding, data = df)
-table
-
-mosaicplot(table)
-
-logit <- glm(factor(coding) ~ bdi_category, data = df, family = binomial("logit"))
-summary(logit)
-
-# Find stats for reporting (lack of) main effect
-car::Anova(logit, type = 2)
-
-exp(coef(logit))
-exp(confint(logit))
-
+```{r depression_summary}
+bdi %>% group_by(bdi_category) %>%
+    summarise(count = n()) %>% 
+    knitr::kable(.,
+                 caption = 'BDI severity category',
+                 col.names = c('', 'Count'))
 ```
 
-# Group allocation as a predictor
+### Null hypothesis significance testing (NHST)
 
-```{r group}
+```{r depression_nhst}
+# xtabulate the data
+depression <- xtabs(~ bdi_category + coding, 
+                    data = bdi)
 
-group_table <- xtabs(~ Group + coding, data = df)
+# Produce mosaic plot
+mosaicplot(depression,
+           main = 'Depression severity vs data completeness',
+           xlab = '',
+           ylab = '',
+           cex = 1.2, 
+           color = c('#56B4E9', '#E69F00'))
 
-trial <- mosaicplot(group_table)
+# Logistic regression on ordered independent variable 
+model <- glm(factor(coding) ~ bdi_category, 
+             data = bdi, 
+             family = binomial(link = "logit"))
 
-goo <- mosaicplot(prop.table((group_table), 1))
+# Model summary
+car::Anova(model)
 
+# Model summary
+summary(model)
+
+# Print odds ratios
+ci <- exp(confint(model))[-1]
+oddR <- data_frame('Item' = names(exp(coef(model))[-1]),
+                   'Odds ratio' = round(exp(coef(model))[-1], 3),
+                   'Lower 95% CI' = round(ci[1:3], 3),
+                   'Upper 95% CI' = round(ci[4:6], 3))
+
+knitr::kable(oddR,
+             caption = 'Odds ratio of regression coefficients')
 ```
 
-# Sex as a predictor
+----
 
-```{r sex}
+# Study group allocation
 
-group_table <- xtabs(~ Sex + coding, data = df)
+### Tabulate 
 
-trial <- mosaicplot(group_table)
+_(no stratification)_
 
-goo <- mosaicplot(prop.table((group_table), 1))
-
-fisher.test(group_table)
-
+```{r group_summary}
+demo %>% group_by(Group) %>%
+    summarise(count = n()) %>% 
+    knitr::kable(.,
+                 caption = 'Study group allocation',
+                 col.names = c('', 'Count'))
 ```
 
-# Conclusion
+### Null hypothesis significance testing (NHST)
 
-Income stability, sex and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).
+```{r group_nhst}
+# xtabulate the data
+group <- xtabs(~ Group + coding,  
+               data = demo)
+
+# Produce mosaic plot
+mosaicplot(group,
+           main = 'Study group allocation vs data completeness',
+           xlab = 'Study group',
+           ylab = '',
+           cex = 1.2, 
+           color = c('#56B4E9', '#E69F00'))
+
+# Fishers exact test
+knitr::kable(tidy(fisher.test(employ)),
+             caption = 'Association between study group allocation and data completeness',
+             col.names = c('Estimate', 'p-value', 
+                           'Lower 95% CI', 'Upper 95% CI',
+                           'Method', 'Alternative'),
+             digits = 3)
+```
+
+---- 
+
+# Sex
+
+### Tabulate 
+
+_(no stratification)_
+
+```{r sex_summary}
+demo %>% group_by(Sex) %>%
+    summarise(count = n()) %>% 
+    knitr::kable(.,
+                 caption = 'Sex',
+                 col.names = c('', 'Count'))
+```
+
+### Null hypothesis significance testing (NHST)
+
+```{r sex_nhst}
+# xtabulate the data
+sex <- xtabs(~ Sex + coding,  
+               data = demo)
+
+# Produce mosaic plot
+mosaicplot(sex,
+           main = 'Sex vs data completeness',
+           xlab = '',
+           ylab = '',
+           cex = 1.2, 
+           color = c('#56B4E9', '#E69F00'))
+
+# Fishers exact test
+knitr::kable(tidy(fisher.test(employ)),
+             caption = 'Association between sex and data completeness',
+             col.names = c('Estimate', 'p-value', 
+                           'Lower 95% CI', 'Upper 95% CI',
+                           'Method', 'Alternative'),
+             digits = 3)
+```
+
+----
+
+# Summary
+
+Income stability, sex, and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).
+
+----
 
 # Session information
 
