@@ -2,7 +2,7 @@
 title: "HIP: Baseline demographic data"
 subtitle: "Descriptive analyses"
 author: "Peter Kamerman and Tory Madden"
-date: "09 March 2018"
+date: "15 March 2018"
 output: 
     html_document:
         theme: yeti
@@ -1395,14 +1395,14 @@ demo %>%
 ```
 ## R version 3.4.3 (2017-11-30)
 ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-## Running under: macOS High Sierra 10.13.3
+## Running under: OS X El Capitan 10.11.6
 ## 
 ## Matrix products: default
 ## BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
 ## LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
-## [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 ## 
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
@@ -1416,16 +1416,16 @@ demo %>%
 ## loaded via a namespace (and not attached):
 ##  [1] tidyselect_0.2.4   reshape2_1.4.3     pander_0.6.1      
 ##  [4] haven_1.1.1        lattice_0.20-35    colorspace_1.3-2  
-##  [7] htmltools_0.3.6    yaml_2.1.17        rlang_0.2.0       
+##  [7] htmltools_0.3.6    yaml_2.1.18        rlang_0.2.0       
 ## [10] pillar_1.2.1       foreign_0.8-69     glue_1.2.0        
 ## [13] RColorBrewer_1.1-2 modelr_0.1.1       readxl_1.0.0      
-## [16] bindr_0.1          plyr_1.8.4         munsell_0.4.3     
+## [16] bindr_0.1.1        plyr_1.8.4         munsell_0.4.3     
 ## [19] gtable_0.2.0       cellranger_1.1.0   rvest_0.3.2       
 ## [22] psych_1.7.8        evaluate_0.10.1    labeling_0.3      
 ## [25] knitr_1.20         parallel_3.4.3     highr_0.6         
-## [28] broom_0.4.3        Rcpp_0.12.15       scales_0.5.0.9000 
+## [28] broom_0.4.3        Rcpp_0.12.16       scales_0.5.0.9000 
 ## [31] backports_1.1.2    jsonlite_1.5       mnormt_1.5-5      
-## [34] hms_0.4.1          digest_0.6.15      stringi_1.1.6     
+## [34] hms_0.4.2          digest_0.6.15      stringi_1.1.7     
 ## [37] grid_3.4.3         rprojroot_1.3-2    cli_1.0.0         
 ## [40] tools_3.4.3        magrittr_1.5       lazyeval_0.2.1    
 ## [43] crayon_1.3.4       pkgconfig_2.0.1    xml2_1.2.0        

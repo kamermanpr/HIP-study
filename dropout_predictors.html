@@ -11,7 +11,7 @@
 
 <meta name="author" content="Peter Kamerman and Tory Madden" />
 
-<meta name="date" content="2018-03-14" />
+<meta name="date" content="2018-03-15" />
 
 <title>HIP: Dropout predictors</title>
 
@@ -266,7 +266,7 @@ div.tocify {
 <h1 class="title toc-ignore">HIP: Dropout predictors</h1>
 <h3 class="subtitle"><em>Do baseline employment and/or depression predict dropout by 8 weeks?</em></h3>
 <h4 class="author"><em>Peter Kamerman and Tory Madden</em></h4>
-<h4 class="date"><em>14 March 2018</em></h4>
+<h4 class="date"><em>15 March 2018</em></h4>
 
 </div>
 
@@ -506,6 +506,15 @@ car<span class="op">::</span><span class="kw">Anova</span>(logit, <span class="d
 ## bdi_category   11.311  3    0.01016 *
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">exp</span>(<span class="kw">coef</span>(logit))</code></pre></div>
+<pre><code>##    (Intercept) bdi_category.L bdi_category.Q bdi_category.C 
+##      0.3813694      4.0080727      0.6929915      0.8295694</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">exp</span>(<span class="kw">confint</span>(logit))</code></pre></div>
+<pre><code>##                    2.5 %     97.5 %
+## (Intercept)    0.2412897  0.5691531
+## bdi_category.L 1.6806908 11.5881757
+## bdi_category.Q 0.2802087  1.5691540
+## bdi_category.C 0.3890178  1.7273221</code></pre>
 </div>
 <div id="group-allocation-as-a-predictor" class="section level1">
 <h1>Group allocation as a predictor</h1>
@@ -539,7 +548,7 @@ trial &lt;-<span class="st"> </span><span class="kw">mosaicplot</span>(group_tab
 </div>
 <div id="conclusion" class="section level1">
 <h1>Conclusion</h1>
-<p>Depression (on BDI), income stability and group allocation did not predict whether or not an individual’s data were present at 8 weeks. However, sex did: men were more likely to have been lost to follow-up at the 8-week time point, but the confidence interval was very wide (OR = 3.25 [95% CI: 1.11-10.97], p &lt; 0.05).</p>
+<p>Income stability, sex and group allocation did not predict whether or not an individual’s data were present at 8 weeks. However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).</p>
 </div>
 <div id="session-information" class="section level1">
 <h1>Session information</h1>

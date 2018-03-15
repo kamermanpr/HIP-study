@@ -1,20 +1,15 @@
 ---
-title: "HIP: Demographic data for the manuscript"
-author: "Peter Kamerman"
+title: "HIP: Demographic data table for the manuscript"
+author: "Peter Kamerman and Tory Madden"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
-output: 
-    html_document:
-        theme: yeti
-        keep_md: true
-        highlight: pygments
-        toc: true
-        toc_float: true
-        code_folding: show
+output: html_document
 ---
 
 ```{r setup, include = FALSE}
 # Load packages
 library(tidyverse)
+library(skimr)
+library(magrittr)
 
 # Set knitr options
 knitr::opts_chunk$set(warning = FALSE,
@@ -32,10 +27,153 @@ Basic descriptive statistics of core demographic data at baseline (time = 0 week
 ```{r import_data}
 # Get data
 demo <- read_rds('./data/demographics.rds') %>%
+    # Transfer CD4 data to CD4_recent if missing CD4_recent data (i.e. most updated CD4 count available)
+    mutate(CD4_uptodate =
+                     ifelse(is.na(CD4_recent),
+                 CD4,
+                 CD4_recent)) %>%
+    # Categorise years of schooling into 7 years or less, 8-12 years, and more than 12 years of education
+    mutate(Education_category = case_when(
+        Years_education <= 7 ~ "0-7 years",
+        Years_education > 7 & Years_education <= 12 ~ "8-12 years",
+        Years_education > 12 ~ "More than 12 years")) %>%
     # Select required columns
-    select(Years_on_ART,
-           CD4,
-           CD4_current)
+    select(ID,
+           Site,
+           Sex,
+           Age,
+           Years_on_ART,
+           CD4_uptodate,
+           HIV_mx,
+           Education_category,
+           SOS_mnemonic)
+
+demo %<>% mutate(HIV_mx = case_when(
+    HIV_mx == "first-line" ~ "first-line ART",
+    HIV_mx == "second-line" ~ "second-line ART",
+    HIV_mx == "monitoring" ~ "no ART")) 
+
+demo %<>% mutate(HIV_mx = factor(HIV_mx, levels = c("first-line ART", "second-line ART", "no ART")))
+
+# Read in other outcomes info
+bdi <- read_rds('./data/bdi.rds') %>%
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    select(ID,
+           ends_with("BL"))  %>%
+    # Make a total score column
+    mutate_at(.vars = 2:22, as.numeric) %>%
+    mutate(bdi_BL = rowSums(.[2:22], na.rm = TRUE),
+           # Treat BDI as a discrete scale
+           bdi_BL = as.integer(round(bdi_BL))) %>%
+    select(ID,
+           bdi_BL)
+
+bpi <- read_rds('./data/bpi.rds') %>%
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    select(ID,
+           ends_with("BL")) %>%
+    # Select columns
+    select(ID, 
+           3:6,
+           9:15) %>%
+    # Calculate PSS at baseline
+    mutate(PSS_BL = rowMeans(.[2:5], na.rm = TRUE),
+           # Treat PSS as a discrete scale
+           PSS_BL = as.integer(round(PSS_BL))) %>%
+    # Calculate PIS at baseline
+    mutate(PIS_BL = rowMeans(.[6:12], na.rm = TRUE),
+           # Treat PIS as a discrete scale
+           PIS_BL = as.integer(round(PIS_BL))) %>%
+    #remove unwanted columns
+    select(ID,
+           PSS_BL,
+           PIS_BL)
+
+
+# EQ5D
+
+eq5d <- read_rds('./data/eq5d.rds') %>%
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    select(ID,
+           contains("BL"))
+
+# Calculate eq5d index score for each time point
+# Create basic term = 1 for all cases in new column
+eq5d$index_core <- 1
+
+# Sum all rows for total BL index score and allocate to a new column in eq5d data frame 
+eq5d %<>% mutate(BL_index_sum = rowSums(.[2:6], na.rm = TRUE))
+
+# Create constant term to subtract if any domain scores > 1 (i.e. sum > 5)
+eq5d %<>% mutate(EQ5D_constant_BL = ifelse(BL_index_sum > 5, 
+                                        yes = 0.081, 
+                                        no = 0))
+
+# 1. Create variable for subtraction for each domain and time point: 
+# Call it (for example) BL_Mobility_index
+# Use values from table in an ifelse statement
+# THEN
+# 2. Compute the index score for each time point using: 
+# BL_index_score = index_core - constant_index - BL_Mobility_index - (etc - for each domain).
+
+# Baseline #
+############
+eq5d %<>% mutate(BL_Mobility_index = ifelse(Mobility.BL == 2, 
+                                                   yes = 0.069,
+                                                   no = ifelse(Mobility.BL == 3, 
+                                                               yes = 0.314,
+                                                               no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_Self_care_index = ifelse(Self_care.BL == 2, 
+                                                   yes = 0.104,
+                                                   no = ifelse(Self_care.BL == 3, 
+                                                               yes = 0.214,
+                                                               no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_Usual_act_index = ifelse(Usual_activities.BL == 2, 
+                                                  yes = 0.036,
+                                                  no = ifelse(Usual_activities.BL == 3, 
+                                                              yes = 0.094,
+                                                              no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_EQ_Pain_index = ifelse(Pain.BL == 2, 
+                                                    yes = 0.123,
+                                                    no = ifelse(Pain.BL == 3, 
+                                                                yes = 0.386,
+                                                                no = 0)))
+
+eq5d <- eq5d %>% mutate(BL_Anx_depr_index = ifelse(Anxiety_and_depression.BL == 2, 
+                                                    yes = 0.071,
+                                                    no = ifelse(Anxiety_and_depression.BL == 3, 
+                                                                yes = 0.236,
+                                                                no = 0)))
+
+# Index score
+eq5d %<>% mutate(eq5d_index_BL = index_core - EQ5D_constant_BL - BL_Mobility_index - BL_Self_care_index - BL_Usual_act_index - BL_EQ_Pain_index - BL_Anx_depr_index)
+
+eq5d %<>% select(ID,
+                 State_of_health.BL,
+                 eq5d_index_BL)
+
+se6 <- read_rds('./data/se6.rds') %>%
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    select(ID,
+           ends_with("BL")) %>%
+    # Calculate SE6 at baseline
+    mutate(se6_BL = rowMeans(.[2:7], na.rm = TRUE),
+           # Treat SE6 as a discrete scale
+           se6_BL = as.integer(round(se6_BL))) %>%
+    #remove unwanted columns
+    select(ID,
+           se6_BL)
+
+# Bind all together
+
+Baseline <- left_join(demo, bdi) %>%
+    left_join(bpi) %>%
+    left_join(eq5d) %>%
+    left_join(se6)
+
 ```
 
 ----
@@ -43,8 +181,8 @@ demo <- read_rds('./data/demographics.rds') %>%
 # Quick look
 
 ```{r quick_look}
-glimpse(demo)
-demo %>% 
+glimpse(Baseline)
+Baseline %>% 
     skim_to_wide() %>% 
     select(variable, missing, complete, n) %>%
     mutate_at(.vars = c(2:4),
@@ -57,812 +195,86 @@ demo %>%
 
 # Sample size
 
-```{r sample_size}
-# Sample size by study site
-demo %>%
-    group_by(Site) %>%
-    summarise(count = n()) %>%
-    knitr::kable(., 
-                 caption = 'Sample size by study site', 
-                 col.names = c('Site', 'Count'))
+```{r sample_size, results = 'asis'}
+# Rename a few columns
+library(data.table)
 
-# Sample size by study site and intervention group
-demo %>%
-    group_by(Site, Group) %>%
-    summarise(count = n()) %>%
-    group_by(Site) %>%
-    mutate(percent = round(count / sum(count) * 100, 1)) %>%
-    knitr::kable(., 
-                 caption = 'Sample size by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Count', 
-                               'Percent (by site)'))
+Baseline %<>% select(ID,
+                     Age,
+                     Sex,
+                     Education_category,
+                     SOS_mnemonic,
+                     Years_on_ART,
+                     HIV_mx,
+                     CD4_uptodate,
+                     PSS_BL,
+                     PIS_BL,
+                     bdi_BL,
+                     se6_BL,
+                     State_of_health.BL,
+                     eq5d_index_BL)
+
+# Set variable labels for use in the table using labelled:var_label command
+
+library(labelled)
+
+# Load package
+library(tableone)
+
+# Create a list of the variables we want in Table 1
+
+listVars <- c("Age", "Site", "Education_category", "SOS_mnemonic", "Years_on_ART", "HIV_mx", "CD4_uptodate", "PSS_BL", "PIS_BL", "bdi_BL", "se6_BL", "State_of_health.BL", "eq5d_index_BL")
+
+#listVars <- c("Age", "Site", "CD4_uptodate", "HIV_mx", "Education_category", "SOS_mnemonic")
+
+# Define categorical variables
+catVars <- c("Site", "HIV_mx", "Education_category", "SOS_mnemonic", "Sex")
+
+#catVars <- c("Site","HIV_mx","Education_category", "SOS_mnemonic", "Sex")
+
+# Create Table 1
+table1 <- CreateTableOne(listVars, Baseline, catVars, strata = c("Sex"))
+table1
+
+summary(table1)
+
+# Specify CD4 count must be treated as non-normal
+biomarker <- "CD4_uptodate"
+
+var_label(Baseline) <- list(
+    Education_category = "Education category", 
+    SOS_mnemonic = "SOS mnemonic",
+    Years_on_ART = "Years on ART",
+    HIV_mx = "HIV treatment", 
+    CD4_uptodate = "Most recent CD4 count",
+    PSS_BL = "Pain severity (PSS)", 
+    PIS_BL = "Pain interference (PIS)",
+    bdi_BL = "Depression (BDI)", 
+    se6_BL = "Self-efficacy (SE-6)",
+    State_of_health.BL = "HRQOL (EQ5D VAS)", 
+    eq5d_index_BL = "HRQOL (EQ5D index)")
+
+print(table1, nonnormal = biomarker, varLabels = TRUE)
+
+# Save output to txt
+
+tab1Mat <- print(table1, nonnormal = biomarker, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE)
+## Save to a CSV file
+write.csv(tab1Mat, file = "myTable1.csv")
+
+read.csv("myTable1.csv")
+library(ztable)
+options(ztable.type="pdf")
+z <- ztable(tab1Mat, align="ccccc")
+
+rgroup <- c("", "Demographics","HIV management","Study outcomes")
+n.rgroup  <- c(1, 6 , 6, 6)
+z <- addrgroup(z,rgroup=rgroup,n.rgroup=n.rgroup,cspan.rgroup=1)
+print(z)
+
 ```
 
-----
 
-# Sex
-
-```{r sex, fig.height = 5}
-# Sex by study site
-demo %>%
-    group_by(Site, Sex) %>%
-    summarise(count = sum(!is.na(Sex)),
-              missing = sum(is.na(Sex))) %>%
-    group_by(Site) %>%
-    mutate(percent = round(count / sum(count) * 100, 1)) %>%
-    knitr::kable(., 
-                 caption = 'Self-identified sex by study site',
-                 col.names = c('Site', 'Sex', 'Count', 'Missing', 
-                               'Percent (by site)'))
-
-# Plot 
-ggplot(data = demo) +
-    aes(x = Site,
-        fill = Sex) +
-    geom_bar(position = position_fill()) +
-    labs(title = 'Participant sex (self-identified)',
-         subtitle = 'Conditioned on study site',
-         y = 'Proportion',
-         x = 'Study site') +
-    scale_fill_brewer(name = 'Sex: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    theme(legend.position = 'top')
-
-# Sex by study site and intervention group
-demo %>%
-    group_by(Site, Group, Sex) %>%
-    summarise(count = sum(!is.na(Sex)),
-              missing = sum(is.na(Sex))) %>%
-    group_by(Site) %>%
-    mutate(sum = sum(count)) %>%
-    mutate(percent = round(count / sum(count) * 100, 1)) %>%
-    select(-sum) %>%
-    knitr::kable(., 
-                 caption = 'Self-identified sex by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Sex', 'Count', 
-                               'Missing', 'Percent (by site)'))
-
-# Plot 
-ggplot(data = demo) +
-    aes(x = Group,
-        fill = Sex) +
-    geom_bar(position = position_fill()) +
-    labs(title = 'Participant sex (self-identified)',
-         subtitle = 'Conditioned on intervention group and study site',
-         y = 'Proportion',
-         x = 'Intervention group') +
-    scale_fill_brewer(name = 'Sex: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    facet_wrap(~ Site, 
-               ncol = 4, 
-               labeller = label_both) +
-    theme(legend.position = 'top')
-```
-
-----
-
-# Age
-
-```{r age, fig.height = 5}
-# Age by study site
-demo %>%
-    group_by(Site) %>%
-    summarise(count = sum(!is.na(Age)),
-              missing = sum(is.na(Age)),
-              mean = round(mean(Age), 1),
-              sd = round(sd(Age), 1),
-              range = paste0(round(min(Age), 2), ' - ', 
-                             round(max(Age), 2))) %>%
-    knitr::kable(., 
-                 caption = 'Age (years) by study site',
-                 col.names = c('Site', 'Count', 'Missing', 'Mean', 
-                               'SD', 'Range'),
-                 align = 'lrrrrr')
-
-# Plot 
-ggplot(data = demo) +
-    aes(y = Age,
-        x = Site) +
-    geom_boxplot(fill = '#666666',
-                 colour = '#000000') +
-    labs(title = 'Participant age',
-         subtitle = 'Conditioned on study site',
-         y = 'Age (years)',
-         x = 'Study site') +
-    theme(legend.position = 'none')
-
-# Age by study site and intervention group
-demo %>%
-    group_by(Site, Group) %>%
-    summarise(count = sum(!is.na(Age)),
-              missing = sum(is.na(Age)),
-              mean = round(mean(Age), 1),
-              sd = round(sd(Age), 1),
-              range = paste0(round(min(Age), 2), ' - ', 
-                             round(max(Age), 2))) %>%
-    knitr::kable(., 
-                 caption = 'Age (years) by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Count', 'Missing', 
-                               'Mean', 'SD', 'Range'),
-                 align = 'llrrrrr')
-
-# Plot 
-ggplot(data = demo) +
-    aes(y = Age,
-        x = Group,
-        fill = Group) +
-    geom_boxplot(position = position_dodge(0)) +
-    labs(title = 'Participant age',
-         subtitle = 'Conditioned on intervention group and study site',
-         y = 'Age (years)',
-         x = 'Intervention group') +
-    scale_fill_brewer(name = 'Intervention group: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    facet_wrap(~ Site, 
-               ncol = 4, 
-               labeller = label_both) +
-    theme(legend.position = 'top')
-```
-
-----
-
-# CD4 T-cell count
-
-### First recorded CD4
-
-```{r first_cd4, fig.height = 5}
-# First CD4 by study site
-demo %>%
-    group_by(Site) %>%
-    summarise(count = sum(!is.na(CD4)),
-              missing = sum(is.na(CD4)),
-              median = round(median(CD4, na.rm = TRUE)),
-              IQR = paste0(round(quantile(CD4, prob = 0.25, na.rm = TRUE)), ' - ', 
-                           round(quantile(CD4, prob = 0.75, na.rm = TRUE)))) %>%
-    knitr::kable(., 
-                 caption = 'First recorded CD4 (cells/ul) by study site',
-                 col.names = c('Site', 'Count', 'Missing','Median', 'IQR'),
-                 align = 'lrrrr')
-
-# Plot
-ggplot(data = demo) +
-    aes(y = CD4,
-        x = Site) +
-    geom_boxplot(fill = '#666666',
-                 colour = '#000000') +
-    labs(title = 'First recorded CD4 T-cell count',
-         subtitle = 'Conditioned on study site',
-         caption = '(Missing data: see table for details)',
-         y = expression(CD4~count~(cells/mu*l)),
-         x = 'Study site') +
-    theme(legend.position = 'none')
-
-# First CD4 by study site and intervention group
-demo %>%
-    group_by(Site, Group) %>%
-    summarise(count = sum(!is.na(CD4)),
-              missing = sum(is.na(CD4)),
-              median = round(median(CD4, na.rm = TRUE)),
-              IQR = paste0(round(quantile(CD4, prob = 0.25, na.rm = TRUE)), ' - ', 
-                           round(quantile(CD4, prob = 0.75, na.rm = TRUE)))) %>%
-    knitr::kable(., 
-                 caption = 'First recorded CD4 (cells/ul) by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Count', 'Missing', 
-                               'Median', 'IQR'),
-                 align = 'llrrrr')
-
-# Plot
-ggplot(data = demo) +
-    aes(y = CD4,
-        x = Group,
-        fill = Group) +
-    geom_boxplot(position = position_dodge(0)) +
-    labs(title = 'First recorded CD4 T-cell count',
-         subtitle = 'Conditioned on intervention group and study site',
-         caption = '(Missing data: see table for details)',
-         y = expression(CD4~count~(cells/mu*l)),
-         x = 'Group') +
-    scale_fill_brewer(name = 'Intervention group: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    facet_wrap(~ Site, 
-               ncol = 4, 
-               labeller = label_both) +
-    theme(legend.position = 'top')
-```
-
-### Latest CD4 (baseline)
-
-```{r latest_cd4, fig.height = 5}
-# Latest CD4 by study site
-demo %>%
-    group_by(Site) %>%
-    summarise(count = sum(!is.na(CD4_recent)),
-              missing = sum(is.na(CD4_recent)),
-              median = round(median(CD4_recent, na.rm = TRUE)),
-              IQR = paste0(round(quantile(CD4_recent, prob = 0.25, na.rm = TRUE)), ' - ', 
-                           round(quantile(CD4_recent, prob = 0.75, na.rm = TRUE)))) %>%
-    knitr::kable(., 
-                 caption = 'Latest recorded CD4 (cells/ul) by study site',
-                 col.names = c('Site', 'Count','Missing', 'Median', 'IQR'),
-                 align = 'lrrrr')
-
-# Plot
-ggplot(data = demo) +
-    aes(y = CD4_recent,
-        x = Site) +
-    geom_boxplot(fill = '#666666',
-                 colour = '#000000') +
-    labs(title = 'Latest recorded CD4 T-cell count',
-         subtitle = 'Conditioned on study site',
-         caption = '(Missing data: see tables for details)',
-         y = expression(CD4~count~(cells/mu*l)),
-         x = 'Study site') +
-    theme(legend.position = 'none')
-
-# Latest CD4 by study site and intervention group
-demo %>%
-    group_by(Site, Group) %>%
-    summarise(count = sum(!is.na(CD4_recent)),
-              missing = sum(is.na(CD4_recent)),
-              median = round(median(CD4_recent, na.rm = TRUE)),
-              IQR = paste0(round(quantile(CD4_recent, prob = 0.25, na.rm = TRUE)), ' - ', 
-                           round(quantile(CD4_recent, prob = 0.75, na.rm = TRUE)))) %>%
-    knitr::kable(., 
-                 caption = 'Latest recorded CD4 (cells/ul) by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Count', 'Missing', 
-                               'Median', 'IQR'),
-                 align = 'llrrrr')
-
-# Plot
-ggplot(data = demo) +
-    aes(y = CD4_recent,
-        x = Group,
-        fill = Group) +
-    geom_boxplot(position = position_dodge(0)) +
-    labs(title = 'Latest recorded CD4 T-cell count',
-         subtitle = 'Conditioned on intervention group and study site',
-         caption = '(Missing data: see tables for details)',
-         y = expression(CD4~count~(cells/mu*l)),
-         x = 'Group') +
-    scale_fill_brewer(name = 'Intervention group: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    facet_wrap(~ Site, 
-               ncol = 4, 
-               labeller = label_both) +
-    theme(legend.position = 'top') 
-```
-
-----
-
-# Employment status
-
-```{r occupation, fig.width = 10, fig.height = 5}
-# Occupation by study site
-demo %>%
-    group_by(Site, Occupation) %>%
-    summarise(count = sum(!is.na(Occupation)),
-              missing = sum(is.na(Occupation))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1)) %>%
-    mutate(count = case_when(
-        count > missing ~ count,
-        TRUE ~ missing
-        ),
-        percent = case_when(
-            percent > 0 ~ as.character(percent),
-            TRUE ~ '-'
-            ),
-        Occupation = case_when(
-        is.na(Occupation) ~ 'missing data',
-        TRUE ~ Occupation
-        )) %>% 
-    select(-missing) %>% 
-    knitr::kable(., 
-                 caption = 'Employment status by study site',
-                 col.names = c('Site', 'Employment status', 'Count', 'Percent'),
-                 align = 'llrr')
-
-# Plot 
-demo %>%
-    filter(!is.na(Occupation)) %>%
-    ggplot(data = .) +
-    aes(x = Site,
-        colour = Occupation,
-        fill = Occupation) +
-    geom_bar(position = position_fill()) +
-    labs(title = 'Employment status',
-         subtitle = 'Conditioned on study site',
-         caption = '(Missing data: see table for details)',
-         y = 'Proportion',
-         x = 'Study site') +
-    scale_fill_brewer(name = 'Employment status: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    scale_colour_brewer(name = 'Employment status: ',
-                        type = 'qual',
-                        palette = 'Dark2') 
-
-# Occupation by study site and intervention group
-demo %>%
-    group_by(Site, Group, Occupation) %>%
-    summarise(count = sum(!is.na(Occupation)),
-              missing = sum(is.na(Occupation))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1)) %>%
-    mutate(count = case_when(
-        count > missing ~ count,
-        TRUE ~ missing
-        ),
-        percent = case_when(
-            percent > 0 ~ as.character(percent),
-            TRUE ~ '-'
-            ),
-        Occupation = case_when(
-        is.na(Occupation) ~ 'missing data',
-        TRUE ~ Occupation
-        )) %>% 
-    select(-missing) %>% 
-    knitr::kable(., 
-                 caption = 'Employment status by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Employment status', 
-                               'Count', 'Percent'),
-                 align = 'lllrr')
-
-# Plot
-demo %>%
-    filter(!is.na(Occupation)) %>%
-    ggplot(data = .) +
-    aes(x = Group,
-        fill = Occupation) +
-    geom_bar(position = position_fill()) +
-    labs(title = 'Employment status',
-         subtitle = 'Conditioned on intervention group and study site',
-         caption = '(Missing data: see table for details)',
-         y = 'Proportion',
-         x = 'Group') +
-    scale_fill_brewer(name = 'Employment status: ',
-                      type = 'qual',
-                      palette = 'Dark2') +
-    facet_wrap(~ Site, 
-               ncol = 4, 
-               labeller = label_both)
-```
-
-----
-
-# Years of education
-
-```{r education1, fig.width = 10, fig.height = 5}
-# Education by study site
-## R1
-demo %>%
-    filter(Site == 'R1') %>%
-    group_by(Site, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), '12+'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'R1: Years of education by study site',
-                 col.names = c('Years of education', 'Count', 'Percent'),
-                 align = 'lrr')
-
-## R2
-demo %>%
-    filter(Site == 'R2') %>%
-   group_by(Site, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), '12+'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'R2: Years of education by study site',
-                 col.names = c('Years of education', 'Count', 'Percent'),
-                 align = 'lrr')
-## U1
-demo %>%
-    filter(Site == 'U1') %>%
-    group_by(Site, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), 
-                                               '12+', 'Missing data'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'U1: Years of education by study site',
-                 col.names = c('Years of education', 'Count', 'Percent'),
-                 align = 'lrr')
-
-## U2
-demo %>%
-    filter(Site == 'U2') %>%
-    group_by(Site, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), 
-                                               '12+', 'Missing data'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'U2: Years of education by study site',
-                 col.names = c('Years of education', 'Count', 'Percent'),
-                 align = 'lrr')
-
-# Plot
-demo %>%
-    filter(!is.na(Years_education)) %>%
-    group_by(Site, Years_education) %>% 
-    summarise(count = n()) %>%
-    group_by(Site) %>% 
-    mutate(proportion = count / sum(count)) %>% 
-    ggplot(data = .) +
-    aes(y = proportion,
-        x = Years_education) +
-    geom_bar(stat = 'identity') +
-    labs(title = 'Years of education', 
-         subtitle = 'Conditioned on study site',
-         caption = '(Missing data: see tables for details)',
-         x = 'Years of educations',
-         y = 'Proportion') +
-    facet_wrap(~ Site,
-               ncol = 4,
-               labeller = label_both)
-```
-
-```{r education2, fig.height = 8, fig.width = 10}
-# Education by intervention group at each study site
-## R1
-demo %>%
-    filter(Site == 'R1') %>%
-    group_by(Site, Group, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), 
-                                               '12+', 'Missing data'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'R1: Years of education by study site',
-                 col.names = c('Years of education', 'Group', 'Count', 'Percent'),
-                 align = 'llrr')
-
-## R2
-demo %>%
-    filter(Site == 'R2') %>%
-    group_by(Site, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), 
-                                               '12+', 'Missing data'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'R2: Years of education by study site',
-                 col.names = c('Years of education', 'Count', 'Percent'),
-                 align = 'lrr')
-## U1
-demo %>%
-    filter(Site == 'U1') %>%
-    group_by(Site, Group, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), 
-                                               '12+', 'Missing data'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'U1: Years of education by study site',
-                 col.names = c('Years of education', 'Group', 'Count', 'Percent'),
-                 align = 'llrr')
-
-## U2
-demo %>%
-    filter(Site == 'U2') %>%
-    group_by(Site, Group, Years_education) %>%
-    summarise(count = sum(!is.na(Years_education)),
-              missing = sum(is.na(Years_education))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(Years_education = as.character(Years_education),
-           Years_education = case_when(
-        is.na(Years_education) ~ 'Missing data',
-        TRUE ~ Years_education
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == '0.0' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    ungroup() %>% 
-    select(-Site, -missing) %>% 
-    mutate(Years_education = factor(Years_education,
-                                    levels = c(as.character(0:12), 
-                                               '12+', 'Missing data'),
-                                    ordered = TRUE)) %>% 
-    knitr::kable(., 
-                 caption = 'U2: Years of education by study site',
-                 col.names = c('Years of education', 'Group', 'Count', 'Percent'),
-                 align = 'llrr')
-
-# Plot
-demo %>%
-    filter(!is.na(Years_education)) %>%
-    group_by(Site, Group, Years_education) %>% 
-    summarise(count = n()) %>%
-    group_by(Site, Group) %>% 
-    mutate(proportion = count / sum(count)) %>% 
-    ggplot(data = .) +
-    aes(y = proportion,
-        x = Years_education,
-        fill = Group) +
-    geom_bar(stat = 'identity') +
-    labs(title = 'Years of education', 
-         subtitle = 'Conditioned on intervention group and study site',
-         caption = '(Missing data: see tables for details)',
-         x = 'Years of educations',
-         y = 'Proportion') +
-    scale_fill_brewer(type = 'qual',
-                      palette = 'Dark2') +
-    facet_grid(Group ~ Site,
-               labeller = label_both) +
-    theme(legend.position = 'none')
-```
-
-----
-
-# SOS health literacy
-
-```{r health_literacy, fig.height = 5}
-# Health literacy by study site
-demo %>%
-    group_by(Site, SOS_mnemonic) %>%
-    summarise(count = sum(!is.na(SOS_mnemonic)),
-              missing = sum(is.na(SOS_mnemonic))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(SOS_mnemonic = case_when(
-        is.na(SOS_mnemonic) ~ 'Missing data',
-        TRUE ~ SOS_mnemonic
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == 'NaN' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    mutate(SOS_mnemonic = factor(SOS_mnemonic,
-                                 levels = c('hl', 'lhl', 'Missing data')),
-           SOS_mnemonic = fct_recode(SOS_mnemonic,
-                                     'Health literate' = 'hl',
-                                     'Low health literacy' = 'lhl')) %>%
-    select(-missing) %>% 
-    knitr::kable(., 
-                 caption = 'SOS health literacy by study site',
-                 col.names = c('Site', 'Literacy state', 'Count', 'Percent'),
-                 align = 'llrr')
-
-# Plot 
-demo %>%
-    filter(!is.na(SOS_mnemonic)) %>%
-    ggplot(data = .) +
-    aes(x = Site,
-        colour = SOS_mnemonic,
-        fill = SOS_mnemonic) +
-    geom_bar(position = position_fill()) +
-    labs(title = 'Health literacy',
-         subtitle = 'Conditioned on study site',
-         caption = 'Missing data: see tables for details',
-         y = 'Proportion',
-         x = 'Study site') +
-    scale_fill_brewer(name = 'Literacy status: ',
-                      labels = c('Health literate', 'Low health literacy'),
-                      type = 'qual',
-                      palette = 'Dark2') +
-    scale_colour_brewer(name = 'Literacy status: ',
-                        labels = c('Health literate', 'Low health literacy'),
-                        type = 'qual',
-                        palette = 'Dark2') +
-    theme(legend.position = 'top')
-
-# Health literacy by study site and intervention group
-demo %>%
-    group_by(Site, Group, SOS_mnemonic) %>%
-    summarise(count = sum(!is.na(SOS_mnemonic)),
-              missing = sum(is.na(SOS_mnemonic))) %>%
-    group_by(Site) %>%
-    mutate(percent = round((count / sum(count)) * 100, 1),
-           percent = sprintf('%.1f', percent)) %>%
-    mutate(SOS_mnemonic = case_when(
-        is.na(SOS_mnemonic) ~ 'Missing data',
-        TRUE ~ SOS_mnemonic
-        ),
-        count = case_when(
-            count > 0 ~ count,
-            TRUE ~ missing
-        ),
-        percent = case_when(
-            percent == 'NaN' ~ '-',
-            TRUE ~ percent
-        )) %>% 
-    mutate(SOS_mnemonic = factor(SOS_mnemonic,
-                                 levels = c('hl', 'lhl', 'Missing data')),
-           SOS_mnemonic = fct_recode(SOS_mnemonic,
-                                     'Health literate' = 'hl',
-                                     'Low health literacy' = 'lhl')) %>%
-    select(-missing) %>% 
-    knitr::kable(., 
-                 caption = 'SOS health literacy by intervention group at each study site',
-                 col.names = c('Site', 'Group', 'Literacy state', 
-                               'Count', 'Percent'),
-                 align = 'lllrr')
-
-# Plot 
-demo %>%
-    filter(!is.na(SOS_mnemonic)) %>%
-    ggplot(data = .) +
-    aes(x = Group,
-        colour = SOS_mnemonic,
-        fill = SOS_mnemonic) +
-    geom_bar(position = position_fill()) +
-    labs(title = 'Health literacy',
-         subtitle = 'Conditioned on intervention group and study site',
-         caption = '(Missing data: see table for details)',
-         y = 'Proportion',
-         x = 'Group') +
-    scale_fill_brewer(name = 'Literacy status: ',
-                      labels = c('Health literate', 'Low health literacy'),
-                      type = 'qual',
-                      palette = 'Dark2') +
-    scale_colour_brewer(name = 'Literacy status: ',
-                        labels = c('Health literate', 'Low health literacy'),
-                        type = 'qual',
-                        palette = 'Dark2') +
-    theme(legend.position = 'top') +
-    facet_wrap(~ Site, 
-               ncol = 4, 
-               labeller = label_both)
-```
 
 ----
 

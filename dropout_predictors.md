@@ -2,7 +2,7 @@
 title: "HIP: Dropout predictors"
 subtitle: "Do baseline employment and/or depression predict dropout by 8 weeks?"
 author: "Peter Kamerman and Tory Madden"
-date: "14 March 2018"
+date: "15 March 2018"
 output: 
     html_document:
         theme: yeti
@@ -325,6 +325,27 @@ car::Anova(logit, type = 2)
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
+```r
+exp(coef(logit))
+```
+
+```
+##    (Intercept) bdi_category.L bdi_category.Q bdi_category.C 
+##      0.3813694      4.0080727      0.6929915      0.8295694
+```
+
+```r
+exp(confint(logit))
+```
+
+```
+##                    2.5 %     97.5 %
+## (Intercept)    0.2412897  0.5691531
+## bdi_category.L 1.6806908 11.5881757
+## bdi_category.Q 0.2802087  1.5691540
+## bdi_category.C 0.3890178  1.7273221
+```
+
 # Group allocation as a predictor
 
 
@@ -379,7 +400,7 @@ fisher.test(group_table)
 
 # Conclusion
 
-Depression (on BDI), income stability and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, sex did: men were more likely to have been lost to follow-up at the 8-week time point, but the confidence interval was very wide (OR = 3.25 [95% CI: 1.11-10.97], p < 0.05).
+Income stability, sex and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).
 
 # Session information
 
