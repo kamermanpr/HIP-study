@@ -1,7 +1,7 @@
 ---
 title: "HIP: Data completeness"
 author: "Peter Kamerman"
-date: "09 March 2018"
+date: "18 March 2018"
 output: 
    html_document:
         theme: yeti
@@ -18,7 +18,7 @@ output:
 
 A descriptive analysis of the completeness of data across the 48 weeks of the trial.
 
-Because the BPI is used to collect the primary outcome measure for the study (pain intensity), we assummed the BPI is representative of completion rates across all outcome measures (BDI, EQ-5D, Simmonds, and SE-6). 
+Because the BPI was used to collect the primary outcome measure for the study (pain intensity), we assummed the BPI would be representative of completion rates across all outcome measures (BDI, EQ-5D, Simmonds, and SE-6). 
 
 ----
 
@@ -31,12 +31,12 @@ bpi <- read_rds('./data/bpi.rds')
 
 # Read in site and group info
 foo <- read_rds('./data/demographics.rds') %>%
-    select(ID, Site, Group, Sex)
+    select(ID, Site, Group)
 
 # Join the two datasets 
 bpi %<>%
     left_join(foo)
-    
+
 # Remove foo
 rm(foo)
 ```
@@ -50,8 +50,8 @@ This summary ignores study site and intervention group stratification.
 
 ```r
 bpi %>% 
-    # Remove unneded columns
-    select(-contains('_rx'), -ID, -Site, -Group, -Sex) %>% 
+    # Remove unneeded columns
+    select(-contains('_rx'), -ID, -Site, -Group) %>% 
     # Skim to a df
     skim_to_wide() %>% 
     # Choose required columns 
@@ -397,6 +397,259 @@ The number of participants with continuous data over successive reassessment tim
 
 ----
 
+# Manuscript plot
+
+A figure of loss to follow-up for publication purposes. 
+
+The 'completeness' plots above catalogued whether data from each participant were missing/available at each time interval without being sensitive to whether participants returned or did not return for reassessment at subsequent time-points. In this analysis, participants were classified as _'lost to follow-up'_ when they had $\geq$ 2 succesive time-points (or week 48 was reached) with missing data, with the time of loss to follow-up being taken as the last time-point for which data were available.
+
+To accomodate erratic attendance at the baseline assessment and subsequent reassessment time-points, we extended our _'lost to follow-up'_ classification to include the following:
+
+- Participants who were recruited, but failed to attend the baseline and week 8 assessments were classified as being lost to follow-up at *-T0*, irrespective of whether they were assessed at other time-points.
+
+- Participants that missed the baseline assessment, but who were reassessed at least at week 8 were classified as lost to follow-up according to the $\geq$ 2 successive missed reassessment rule, but starting at week 8.
+
+### Clean data
+
+
+```r
+# Spread data
+bpi_spread <- bpi %>%
+    # Code whether data coding data are missing or not
+    mutate(coding = ifelse(is.na(answer), 
+                           yes = '0',
+                           no = '1')) %>% 
+    mutate(coding = as.numeric(coding)) %>% 
+    select(-answer) %>% 
+    # Recode time before spreading
+    mutate(time = paste0('T', time)) %>% 
+    # Spread time columns
+    spread(key = time,
+           value = coding) %>% 
+    select(ID, T0, T4, T8, T12, T24, T48) %>% 
+    arrange(T0, T4, T8, T12, T24, T48)
+
+# Get unique combinations
+bpi_spread %<>% 
+    group_by(ID) %>% 
+    mutate(combos = paste(T0, T4, T8, T12, T24, T48, collapse = ' '))
+
+# Check the combinations
+bpi_spread %>%
+    .$combos %>% 
+    unique(.) %>%
+    data.frame(combos = .)
+```
+
+```
+##         combos
+## 1  0 0 0 0 0 0
+## 2  0 0 0 0 0 1
+## 3  0 0 0 0 1 0
+## 4  0 0 0 0 1 1
+## 5  0 1 0 1 1 1
+## 6  0 1 1 0 1 1
+## 7  0 1 1 1 0 0
+## 8  0 1 1 1 1 0
+## 9  0 1 1 1 1 1
+## 10 1 0 0 0 0 0
+## 11 1 0 0 0 0 1
+## 12 1 0 0 1 0 0
+## 13 1 0 0 1 1 1
+## 14 1 0 1 0 0 0
+## 15 1 0 1 0 0 1
+## 16 1 0 1 0 1 1
+## 17 1 0 1 1 0 1
+## 18 1 0 1 1 1 0
+## 19 1 0 1 1 1 1
+## 20 1 1 0 0 0 0
+## 21 1 1 0 0 0 1
+## 22 1 1 0 0 1 0
+## 23 1 1 0 0 1 1
+## 24 1 1 0 1 0 0
+## 25 1 1 0 1 0 1
+## 26 1 1 0 1 1 0
+## 27 1 1 1 0 0 0
+## 28 1 1 1 0 0 1
+## 29 1 1 1 0 1 0
+## 30 1 1 1 0 1 1
+## 31 1 1 1 1 0 0
+## 32 1 1 1 1 0 1
+## 33 1 1 1 1 1 0
+## 34 1 1 1 1 1 1
+```
+
+```r
+# Manually specify combos (need to find a way of automating this)
+# 
+# The case_when booleans assign participants with the last visit at which 
+# they had data recorded (i.e., data missing from future time-points). 
+# 
+# Gaps in data have been allowed for, so missing a visit did not result in a 
+# participant being marked a lost to follow-up at future dates, if they returned 
+# at some point.  
+#
+# People without week 8 data (T8) and no baseline data (T0) were coded as -T1 
+# (i.e., recruited and consented, but did not take part in the study). 
+
+bpi_spread %<>%
+    mutate(Time_of_loss = case_when(
+        T0 == '0' & T4 == '0' & T8 == '0' & T12 == '0' & T24 == '0' & T48 == '0' ~ '-T0',
+        T0 == '0' & T4 == '0' & T8 == '0' & T12 == '0' & T24 == '0' & T48 == '1' ~ '-T0',
+        T0 == '0' & T4 == '0' & T8 == '0' & T12 == '0' & T24 == '1' & T48 == '0' ~ '-T0',
+        T0 == '0' & T4 == '0' & T8 == '0' & T12 == '0' & T24 == '1' & T48 == '1' ~ '-T0',
+        T0 == '0' & T4 == '1' & T8 == '0' & T12 == '1' & T24 == '1' & T48 == '1' ~ '-T0',
+        T0 == '0' & T4 == '1' & T8 == '1' & T12 == '0' & T24 == '1' & T48 == '1' ~ 'T48',
+        T0 == '0' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '0' & T48 == '0' ~ 'T12',
+        T0 == '0' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '1' & T48 == '0' ~ 'T24',
+        T0 == '0' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '1' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '0' & T8 == '0' & T12 == '0' & T24 == '0' & T48 == '0' ~ 'T0',
+        T0 == '1' & T4 == '0' & T8 == '0' & T12 == '0' & T24 == '0' & T48 == '1' ~ 'T0',
+        T0 == '1' & T4 == '0' & T8 == '0' & T12 == '1' & T24 == '0' & T48 == '0' ~ 'T0',
+        T0 == '1' & T4 == '0' & T8 == '0' & T12 == '1' & T24 == '1' & T48 == '1' ~ 'T0',
+        T0 == '1' & T4 == '0' & T8 == '1' & T12 == '0' & T24 == '0' & T48 == '0' ~ 'T8',
+        T0 == '1' & T4 == '0' & T8 == '1' & T12 == '0' & T24 == '0' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '0' & T8 == '1' & T12 == '0' & T24 == '1' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '0' & T8 == '1' & T12 == '1' & T24 == '0' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '0' & T8 == '1' & T12 == '1' & T24 == '1' & T48 == '0' ~ 'T24',
+        T0 == '1' & T4 == '0' & T8 == '1' & T12 == '1' & T24 == '1' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '0' & T24 == '0' & T48 == '0' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '0' & T24 == '0' & T48 == '1' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '0' & T24 == '1' & T48 == '0' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '0' & T24 == '1' & T48 == '1' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '1' & T24 == '0' & T48 == '0' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '1' & T24 == '0' & T48 == '1' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '0' & T12 == '1' & T24 == '1' & T48 == '0' ~ 'T4',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '0' & T24 == '0' & T48 == '0' ~ 'T8',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '0' & T24 == '0' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '0' & T24 == '1' & T48 == '0' ~ 'T24',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '0' & T24 == '1' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '0' & T48 == '0' ~ 'T12',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '0' & T48 == '1' ~ 'T48',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '1' & T48 == '0' ~ 'T24',
+        T0 == '1' & T4 == '1' & T8 == '1' & T12 == '1' & T24 == '1' & T48 == '1' ~ 'T48'
+        ))
+
+# Tabulate
+bpi_spread %>% 
+    group_by(combos, Time_of_loss) %>%
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    mutate(Time_of_loss = factor(Time_of_loss,
+                                 levels = c('-T0', 'T0', 'T4', 'T8', 
+                                            'T12', 'T24', 'T48'),
+                                 ordered = TRUE)) %>% 
+    arrange(Time_of_loss, desc(count)) %>% 
+    mutate(combos = str_replace_all(combos,
+                                    pattern = '0',
+                                    replacement = '_'),
+           combos = str_replace_all(combos,
+                                    pattern = '1',
+                                    replacement = 'A')) %>% 
+    knitr::kable(.,
+                 caption = '',
+                 col.names = c('Attendance sequence', 
+                               'Lost to follow-up classification',
+                               'Number of participants'),
+                 align = 'rrr')
+```
+
+
+
+Table: 
+
+ Attendance sequence   Lost to follow-up classification   Number of participants
+--------------------  ---------------------------------  -----------------------
+         _ _ _ _ _ _                                -T0                        8
+         _ _ _ _ _ A                                -T0                        1
+         _ _ _ _ A _                                -T0                        1
+         _ _ _ _ A A                                -T0                        1
+         _ A _ A A A                                -T0                        1
+         A _ _ _ _ _                                 T0                       22
+         A _ _ A _ _                                 T0                        2
+         A _ _ _ _ A                                 T0                        1
+         A _ _ A A A                                 T0                        1
+         A A _ _ _ _                                 T4                        5
+         A A _ _ _ A                                 T4                        4
+         A A _ A _ _                                 T4                        4
+         A A _ A A _                                 T4                        4
+         A A _ _ A _                                 T4                        1
+         A A _ _ A A                                 T4                        1
+         A A _ A _ A                                 T4                        1
+         A A A _ _ _                                 T8                        5
+         A _ A _ _ _                                 T8                        2
+         A A A A _ _                                T12                        7
+         _ A A A _ _                                T12                        1
+         A A A A A _                                T24                       12
+         A _ A A A _                                T24                        4
+         A A A _ A _                                T24                        3
+         _ A A A A _                                T24                        1
+         A A A A A A                                T48                       32
+         A A A _ A A                                T48                       14
+         A _ A _ A A                                T48                        5
+         A _ A A A A                                T48                        4
+         A A A A _ A                                T48                        4
+         A _ A _ _ A                                T48                        3
+         A _ A A _ A                                T48                        2
+         _ A A _ A A                                T48                        1
+         _ A A A A A                                T48                        1
+         A A A _ _ A                                T48                        1
+
+```r
+# Drop columns
+bpi_time <- bpi_spread %>% 
+    select(ID, Time_of_loss) %>% 
+    mutate(counter = '1',
+           Time_of_loss = factor(Time_of_loss,
+                                 levels = c('-T0', 'T0', 'T4', 'T8', 
+                                            'T12', 'T24', 'T48'),
+                                 ordered = TRUE)) 
+
+# Generate plot data
+bpi_summary <- bpi_time %>% 
+    # How many people are have data at a given time interval
+    group_by(Time_of_loss) %>% 
+    summarise(count = n()) %>% 
+    ungroup() %>% 
+    # Calculate the cumulative loss
+    mutate(cumulative = cumsum(count)) %>% 
+    # Get the reverse number (how many people add to the data at each time interval)
+    mutate(rev_cumulative = nrow(bpi_time) - cumulative) %>% 
+    # Get the lag 1 rev_cumulative value
+    mutate(lag_cumulative = lag(rev_cumulative))
+
+# Add lag_cumulative value for -T0
+bpi_summary[1, 5] <- nrow(bpi_time)
+
+
+ggplot(data = bpi_summary) +
+    aes(x = Time_of_loss,
+        y = lag_cumulative) + 
+    geom_bar(stat = 'identity',
+             fill = '#0072B2') +
+    geom_text(aes(label = 
+                      str_glue('{round(100 * (lag_cumulative / nrow(bpi_time)))}%')),
+              colour = '#FFFFFF',
+              size = 7.5,
+              vjust = 2) +
+    scale_x_discrete(labels = c('Consented', '0', '4', '8', '12', '24', '48')) +
+    scale_y_continuous(limits = c(0, 160),
+                       breaks = c(0, 40, 80, 120, 160),
+                       expand = c(0, 0)) +
+    labs(x = 'Week of trial',
+         y = 'Number of participants') +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'none',
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_line(size = 0.9))
+```
+
+<img src="figures/completeness/manuscript_clean-1.png" width="864" style="display: block; margin: auto;" />
+
+----
+
 # Session information
 
 
@@ -424,14 +677,14 @@ The number of participants with continuous data over successive reassessment tim
 ## loaded via a namespace (and not attached):
 ##  [1] tidyselect_0.2.4   reshape2_1.4.3     pander_0.6.1      
 ##  [4] haven_1.1.1        lattice_0.20-35    colorspace_1.3-2  
-##  [7] htmltools_0.3.6    yaml_2.1.17        rlang_0.2.0       
+##  [7] htmltools_0.3.6    yaml_2.1.18        rlang_0.2.0       
 ## [10] pillar_1.2.1       foreign_0.8-69     glue_1.2.0        
 ## [13] RColorBrewer_1.1-2 modelr_0.1.1       readxl_1.0.0      
 ## [16] bindr_0.1          plyr_1.8.4         munsell_0.4.3     
 ## [19] gtable_0.2.0       cellranger_1.1.0   rvest_0.3.2       
 ## [22] psych_1.7.8        evaluate_0.10.1    labeling_0.3      
 ## [25] knitr_1.20         parallel_3.4.3     highr_0.6         
-## [28] broom_0.4.3        Rcpp_0.12.15       scales_0.5.0.9000 
+## [28] broom_0.4.3        Rcpp_0.12.16       scales_0.5.0.9000 
 ## [31] backports_1.1.2    jsonlite_1.5       mnormt_1.5-5      
 ## [34] hms_0.4.1          digest_0.6.15      stringi_1.1.6     
 ## [37] grid_3.4.3         rprojroot_1.3-2    cli_1.0.0         
