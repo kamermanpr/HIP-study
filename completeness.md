@@ -409,8 +409,6 @@ To accomodate erratic attendance at the baseline assessment and subsequent reass
 
 - Participants that missed the baseline assessment, but who were reassessed at least at week 8 were classified as lost to follow-up according to the $\geq$ 2 successive missed reassessment rule, but starting at week 8.
 
-### Clean data
-
 
 ```r
 # Spread data
@@ -642,11 +640,13 @@ ggplot(data = bpi_summary) +
     theme(legend.position = 'none',
           panel.border = element_blank(),
           panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
           axis.line = element_line(size = 0.9))
 ```
 
-<img src="figures/completeness/manuscript_clean-1.png" width="864" style="display: block; margin: auto;" />
+<img src="figures/completeness/manuscript-1.png" width="864" style="display: block; margin: auto;" />
 
 ----
 
