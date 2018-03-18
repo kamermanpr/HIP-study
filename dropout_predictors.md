@@ -2,7 +2,7 @@
 title: "HIP: Dropout predictors"
 subtitle: "Do baseline employment and/or depression predict dropout by week 8?"
 author: "Peter Kamerman and Tory Madden"
-date: "15 March 2018"
+date: "18 March 2018"
 output: 
     html_document:
         theme: yeti
@@ -141,7 +141,7 @@ demo %<>%
 
 # Join with completeness ('bpi') data
 demo %<>% 
-    right_join(bpi)
+    left_join(bpi)
 
 ############################################################
 #                                                          #
@@ -164,13 +164,13 @@ bdi %<>%
 ## Site U2, R1, and R2 used BDI I
 bdi %<>% 
     mutate(bdi_category = case_when(
-    Site == "U1" & Total.BL <  14 ~ "none_minimal",
-    Site == "U1" & Total.BL > 13 & Total.BL < 20 ~ "mild",
-    Site == "U1" & Total.BL > 19 & Total.BL < 29 ~ "moderate-severe",
+    Site == "U1" & Total.BL <= 13 ~ "none-minimal",
+    Site == "U1" & Total.BL > 13 & Total.BL <= 19 ~ "mild",
+    Site == "U1" & Total.BL > 19 & Total.BL <= 28 ~ "moderate-severe",
     Site == "U1" & Total.BL > 28 ~ "severe",
-    Site != "U1" & Total.BL <  11 ~ "none-minimal",
-    Site != "U1" & Total.BL > 9 & Total.BL < 19 ~ "mild",
-    Site != "U1" & Total.BL > 18 & Total.BL < 30 ~ "moderate-severe",
+    Site != "U1" & Total.BL <= 9 ~ "none-minimal",
+    Site != "U1" & Total.BL > 9 & Total.BL <= 18 ~ "mild",
+    Site != "U1" & Total.BL > 18 & Total.BL <= 29 ~ "moderate-severe",
     Site != "U1" & Total.BL > 29 ~ "severe"))
 
 # Convert bdi category into an ordered factor
@@ -186,7 +186,7 @@ bdi %<>%
 
 # Join with completeness ('bpi') data
 bdi %<>% 
-    right_join(bpi)
+    left_join(bpi)
 ```
 
 ----
@@ -276,11 +276,11 @@ Table: BDI severity category
 
                    Count
 ----------------  ------
-none-minimal          15
-mild                  33
+none-minimal          28
+mild                  35
 moderate-severe       39
 severe                39
-NA                    34
+NA                    19
 
 ### Null hypothesis significance testing (NHST)
 
@@ -315,8 +315,8 @@ car::Anova(model)
 ## Analysis of Deviance Table (Type II tests)
 ## 
 ## Response: factor(coding)
-##              LR Chisq Df Pr(>Chisq)  
-## bdi_category   9.5066  3    0.02326 *
+##              LR Chisq Df Pr(>Chisq)   
+## bdi_category     11.4  3    0.00975 **
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -333,26 +333,26 @@ summary(model)
 ##     data = bdi)
 ## 
 ## Deviance Residuals: 
-##     Min       1Q   Median       3Q      Max  
-## -1.0701  -1.0277  -0.7981   1.2887   2.3272  
+##    Min      1Q  Median      3Q     Max  
+## -1.070  -1.028  -0.771   1.289   2.114  
 ## 
 ## Coefficients:
 ##                Estimate Std. Error z value Pr(>|z|)    
-## (Intercept)     -1.0602     0.2994  -3.541 0.000399 ***
-## bdi_category.L   1.7355     0.7362   2.357 0.018403 *  
-## bdi_category.Q  -0.7766     0.5988  -1.297 0.194703    
-## bdi_category.C   0.1179     0.4186   0.282 0.778130    
+## (Intercept)    -0.95047    0.21406  -4.440 8.99e-06 ***
+## bdi_category.L  1.40543    0.47717   2.945  0.00323 ** 
+## bdi_category.Q -0.47716    0.42812  -1.115  0.26504    
+## bdi_category.C -0.05176    0.37266  -0.139  0.88954    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
-##     Null deviance: 161.75  on 125  degrees of freedom
-## Residual deviance: 152.25  on 122  degrees of freedom
-##   (34 observations deleted due to missingness)
-## AIC: 160.25
+##     Null deviance: 176.6  on 140  degrees of freedom
+## Residual deviance: 165.2  on 137  degrees of freedom
+##   (19 observations deleted due to missingness)
+## AIC: 173.2
 ## 
-## Number of Fisher Scoring iterations: 5
+## Number of Fisher Scoring iterations: 4
 ```
 
 ```r
@@ -373,9 +373,9 @@ Table: Odds ratio of regression coefficients
 
 Item              Odds ratio   Lower 95% CI   Upper 95% CI
 ---------------  -----------  -------------  -------------
-bdi_category.L         5.672          1.713          0.576
-bdi_category.Q         0.460          0.099         41.295
-bdi_category.C         1.125          0.502          1.285
+bdi_category.L         4.077          1.718          0.575
+bdi_category.Q         0.621          0.252         11.754
+bdi_category.C         0.950          0.452          1.393
 
 ----
 
@@ -511,6 +511,57 @@ Income stability, sex, and group allocation did not predict whether or not an in
 
 ----
 
+# Manuscript plot
+
+Plot of proportion of participants with missing data at each level of depression severity, as rated on the Beck's Depression Inventory. Numbers in the blocks show the absolute counts. 
+**Note:** 19 participants are missing baseline BDI data, so the total sample is 141.
+
+
+```r
+# Plot
+bdi %>% 
+    filter(!is.na(bdi_category)) %>% 
+    mutate(bdi_category = fct_recode(bdi_category,
+                                     Minimal = 'none-minimal',
+                                     Mild = 'mild',
+                                     Moderate = 'moderate-severe',
+                                     Severe = 'severe'),
+           coding = case_when(
+               coding == 'Data available' ~ 'Data available   ',
+               coding == 'Data missing' ~ 'Data missing    '
+               )) %>% 
+    ggplot(data = .) +
+    aes(bdi_category,
+        fill = coding) +
+    geom_bar(position = position_fill()) +
+    geom_text(stat = 'count',
+              position = position_fill(),
+              aes(label = ..count..),
+              colour = '#FFFFFF',
+              vjust = 1.5,
+              size = 7.5) +
+    labs(x = 'Depression severity',
+         y = 'Proportion of participants') +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_fill_manual(values = c('#0072B2', '#D55E00')) +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'top',
+          legend.title = element_blank(),
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_blank(),
+          axis.ticks = element_blank())
+```
+
+<img src="figures/dropout-predictors/manuscript-1.png" width="672" style="display: block; margin: auto;" />
+
+
+----
+
 # Session information
 
 
@@ -539,7 +590,7 @@ Income stability, sex, and group allocation did not predict whether or not an in
 ## loaded via a namespace (and not attached):
 ##  [1] httr_1.3.1         jsonlite_1.5       splines_3.4.3     
 ##  [4] modelr_0.1.1       assertthat_0.2.0   highr_0.6         
-##  [7] stats4_3.4.3       cellranger_1.1.0   yaml_2.1.17       
+##  [7] stats4_3.4.3       cellranger_1.1.0   yaml_2.1.18       
 ## [10] pillar_1.2.1       backports_1.1.2    lattice_0.20-35   
 ## [13] quantreg_5.35      glue_1.2.0         digest_0.6.15     
 ## [16] rvest_0.3.2        minqa_1.2.4        colorspace_1.3-2  
@@ -555,9 +606,9 @@ Income stability, sex, and group allocation did not predict whether or not an in
 ## [46] tools_3.4.3        hms_0.4.1          multcomp_1.4-8    
 ## [49] munsell_0.4.3      compiler_3.4.3     rlang_0.2.0       
 ## [52] grid_3.4.3         nloptr_1.0.4       rstudioapi_0.7    
-## [55] rmarkdown_1.9      gtable_0.2.0       codetools_0.2-15  
-## [58] reshape2_1.4.3     R6_2.2.2           zoo_1.8-1         
-## [61] lubridate_1.7.3    knitr_1.20         bindr_0.1         
-## [64] rprojroot_1.3-2    modeltools_0.2-21  stringi_1.1.6     
-## [67] parallel_3.4.3     Rcpp_0.12.15
+## [55] labeling_0.3       rmarkdown_1.9      gtable_0.2.0      
+## [58] codetools_0.2-15   reshape2_1.4.3     R6_2.2.2          
+## [61] zoo_1.8-1          lubridate_1.7.3    knitr_1.20        
+## [64] bindr_0.1          rprojroot_1.3-2    modeltools_0.2-21 
+## [67] stringi_1.1.6      parallel_3.4.3     Rcpp_0.12.16
 ```
