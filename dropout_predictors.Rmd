@@ -106,7 +106,7 @@ demo %<>%
 
 # Join with completeness ('bpi') data
 demo %<>% 
-    right_join(bpi)
+    left_join(bpi)
 
 ############################################################
 #                                                          #
@@ -129,13 +129,13 @@ bdi %<>%
 ## Site U2, R1, and R2 used BDI I
 bdi %<>% 
     mutate(bdi_category = case_when(
-    Site == "U1" & Total.BL <  14 ~ "none_minimal",
-    Site == "U1" & Total.BL > 13 & Total.BL < 20 ~ "mild",
-    Site == "U1" & Total.BL > 19 & Total.BL < 29 ~ "moderate-severe",
+    Site == "U1" & Total.BL <= 13 ~ "none-minimal",
+    Site == "U1" & Total.BL > 13 & Total.BL <= 19 ~ "mild",
+    Site == "U1" & Total.BL > 19 & Total.BL <= 28 ~ "moderate-severe",
     Site == "U1" & Total.BL > 28 ~ "severe",
-    Site != "U1" & Total.BL <  11 ~ "none-minimal",
-    Site != "U1" & Total.BL > 9 & Total.BL < 19 ~ "mild",
-    Site != "U1" & Total.BL > 18 & Total.BL < 30 ~ "moderate-severe",
+    Site != "U1" & Total.BL <= 9 ~ "none-minimal",
+    Site != "U1" & Total.BL > 9 & Total.BL <= 18 ~ "mild",
+    Site != "U1" & Total.BL > 18 & Total.BL <= 29 ~ "moderate-severe",
     Site != "U1" & Total.BL > 29 ~ "severe"))
 
 # Convert bdi category into an ordered factor
@@ -151,7 +151,7 @@ bdi %<>%
 
 # Join with completeness ('bpi') data
 bdi %<>% 
-    right_join(bpi)
+    left_join(bpi)
 ```
 
 ----
@@ -332,6 +332,54 @@ knitr::kable(tidy(fisher.test(employ)),
 # Summary
 
 Income stability, sex, and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).
+
+----
+
+# Manuscript plot
+
+Plot of proportion of participants with missing data at each level of depression severity, as rated on the Beck's Depression Inventory. Numbers in the blocks show the absolute counts. 
+**Note:** 19 participants are missing baseline BDI data, so the total sample is 141.
+
+```{r manuscript}
+# Plot
+bdi %>% 
+    filter(!is.na(bdi_category)) %>% 
+    mutate(bdi_category = fct_recode(bdi_category,
+                                     Minimal = 'none-minimal',
+                                     Mild = 'mild',
+                                     Moderate = 'moderate-severe',
+                                     Severe = 'severe'),
+           coding = case_when(
+               coding == 'Data available' ~ 'Data available   ',
+               coding == 'Data missing' ~ 'Data missing    '
+               )) %>% 
+    ggplot(data = .) +
+    aes(bdi_category,
+        fill = coding) +
+    geom_bar(position = position_fill()) +
+    geom_text(stat = 'count',
+              position = position_fill(),
+              aes(label = ..count..),
+              colour = '#FFFFFF',
+              vjust = 1.5,
+              size = 7.5) +
+    labs(x = 'Depression severity',
+         y = 'Proportion of participants') +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_fill_manual(values = c('#0072B2', '#D55E00')) +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'top',
+          legend.title = element_blank(),
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_blank(),
+          axis.ticks = element_blank())
+```
+
 
 ----
 
