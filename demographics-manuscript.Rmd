@@ -199,7 +199,7 @@ Baseline %>%
 # Rename a few columns
 library(data.table)
 
-Baseline %<>% select(ID,
+Baseline_table1 <- Baseline %<>% select(ID,
                      Age,
                      Sex,
                      Education_category,
@@ -233,10 +233,11 @@ catVars <- c("Site", "HIV_mx", "Education_category", "SOS_mnemonic", "Sex")
 #catVars <- c("Site","HIV_mx","Education_category", "SOS_mnemonic", "Sex")
 
 # Create Table 1
-table1 <- CreateTableOne(listVars, Baseline, catVars, strata = c("Sex"))
+table1 <- CreateTableOne(listVars, Baseline_table1, catVars, strata = c("Sex"))
 table1
 
 summary(table1)
+
 
 # Specify CD4 count must be treated as non-normal
 biomarker <- "CD4_uptodate"
@@ -256,7 +257,7 @@ var_label(Baseline) <- list(
 
 print(table1, nonnormal = biomarker, varLabels = TRUE)
 
-# Save output to txt
+# Save output to txt for Table 1
 
 tab1Mat <- print(table1, nonnormal = biomarker, quote = FALSE, noSpaces = TRUE, printToggle = FALSE, varLabels = TRUE)
 ## Save to a CSV file
@@ -274,8 +275,32 @@ print(z)
 
 ```
 
+```{r custom_table}
 
+summary <- Baseline %>% summarise(
+    mean_age = mean(Age, na.rm = TRUE),
+    median_age = median(Age, na.rm = TRUE),
+    max_age = max(Age, na.rm = TRUE),
+    min_age = min(Age, na.rm = TRUE),
+    median_CD4 = median(CD4_uptodate, na.rm = TRUE),
+    Q25_CD4 = quantile(CD4_uptodate, 0.25, na.rm = TRUE),
+    Q75_CD4 = quantile(CD4_uptodate, 0.75, na.rm = TRUE),
+    mean_pss = mean(PSS_BL, na.rm = TRUE),
+    sd_pss = sd(PSS_BL, na.rm = TRUE),
+    mean_pis = mean(PIS_BL, na.rm = TRUE),
+    sd_pis = sd(PIS_BL, na.rm = TRUE),
+    mean_bdi = mean(bdi_BL, na.rm = TRUE),
+    sd_bdi = sd(bdi_BL, na.rm = TRUE),
+    mean_se6 = mean(se6_BL, na.rm = TRUE),
+    sd_se6 = sd(se6_BL, na.rm = TRUE),
+    sd_eq5dSOH = sd(State_of_health.BL, na.rm = TRUE),
+    mean_eq5dindex = mean(eq5d_index_BL, na.rm = TRUE),
+    sd_eq5dindex = sd(eq5d_index_BL, na.rm = TRUE)
+)
 
+knitr::kable(summary)
+
+```
 ----
 
 # Session information
