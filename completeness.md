@@ -1,7 +1,7 @@
 ---
 title: "HIP: Data completeness"
 author: "Peter Kamerman"
-date: "18 March 2018"
+date: "20 March 2018"
 output: 
    html_document:
         theme: yeti
@@ -619,8 +619,8 @@ bpi_summary <- bpi_time %>%
 # Add lag_cumulative value for -T0
 bpi_summary[1, 5] <- nrow(bpi_time)
 
-
-ggplot(data = bpi_summary) +
+# Colour (dark)
+p1 <- ggplot(data = bpi_summary) +
     aes(x = Time_of_loss,
         y = lag_cumulative) + 
     geom_bar(stat = 'identity',
@@ -644,9 +644,86 @@ ggplot(data = bpi_summary) +
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
           axis.line = element_line(size = 0.9))
+
+p1
 ```
 
 <img src="figures/completeness/manuscript-1.png" width="864" style="display: block; margin: auto;" />
+
+```r
+ggsave(filename = 'figure-1_colourA.pdf',
+       height = 8, width = 10, units = 'in')
+
+# Colour (light)
+p2 <- ggplot(data = bpi_summary) +
+    aes(x = Time_of_loss,
+        y = lag_cumulative) + 
+    geom_bar(stat = 'identity',
+             fill = '#56B4E9') +
+    geom_text(aes(label = 
+                      str_glue('{round(100 * (lag_cumulative / nrow(bpi_time)))}%')),
+              colour = '#000000',
+              size = 7.5,
+              vjust = 2) +
+    scale_x_discrete(labels = c('Consented', '0', '4', '8', '12', '24', '48')) +
+    scale_y_continuous(limits = c(0, 160),
+                       breaks = c(0, 40, 80, 120, 160),
+                       expand = c(0, 0)) +
+    labs(x = 'Week of trial',
+         y = 'Number of participants') +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'none',
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_line(size = 0.9))
+
+p2
+```
+
+<img src="figures/completeness/manuscript-2.png" width="864" style="display: block; margin: auto;" />
+
+```r
+ggsave(filename = 'figure-1_colourB.pdf',
+       height = 8, width = 10, units = 'in')
+
+# Greyscale
+p3 <- ggplot(data = bpi_summary) +
+    aes(x = Time_of_loss,
+        y = lag_cumulative) + 
+    geom_bar(stat = 'identity',
+             fill = '#888888') +
+    geom_text(aes(label = 
+                      str_glue('{round(100 * (lag_cumulative / nrow(bpi_time)))}%')),
+              colour = '#000000',
+              size = 7.5,
+              vjust = 2) +
+    scale_x_discrete(labels = c('Consented', '0', '4', '8', '12', '24', '48')) +
+    scale_y_continuous(limits = c(0, 160),
+                       breaks = c(0, 40, 80, 120, 160),
+                       expand = c(0, 0)) +
+    labs(x = 'Week of trial',
+         y = 'Number of participants') +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'none',
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_line(size = 0.9))
+
+p3
+```
+
+<img src="figures/completeness/manuscript-3.png" width="864" style="display: block; margin: auto;" />
+
+```r
+ggsave(filename = 'figure-1_greyscale.pdf',
+       height = 8, width = 10, units = 'in')
+```
 
 ----
 

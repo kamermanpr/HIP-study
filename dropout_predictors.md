@@ -2,7 +2,7 @@
 title: "HIP: Dropout predictors"
 subtitle: "Do baseline employment and/or depression predict dropout by week 8?"
 author: "Peter Kamerman and Tory Madden"
-date: "18 March 2018"
+date: "20 March 2018"
 output: 
     html_document:
         theme: yeti
@@ -518,8 +518,8 @@ Plot of proportion of participants with missing data at each level of depression
 
 
 ```r
-# Plot
-bdi %>% 
+# Colour (dark)
+p1 <- bdi %>% 
     filter(!is.na(bdi_category)) %>% 
     mutate(bdi_category = fct_recode(bdi_category,
                                      Minimal = 'none-minimal',
@@ -555,9 +555,110 @@ bdi %>%
           axis.text = element_text(colour = '#000000'),
           axis.line = element_blank(),
           axis.ticks = element_blank())
+
+p1
 ```
 
 <img src="figures/dropout-predictors/manuscript-1.png" width="672" style="display: block; margin: auto;" />
+
+```r
+ggsave(filename = 'figure-2_colourA.pdf',
+       height = 8, width = 10, units = 'in')
+
+# Colour (light)
+p2 <- bdi %>% 
+    filter(!is.na(bdi_category)) %>% 
+    mutate(bdi_category = fct_recode(bdi_category,
+                                     Minimal = 'none-minimal',
+                                     Mild = 'mild',
+                                     Moderate = 'moderate-severe',
+                                     Severe = 'severe'),
+           coding = case_when(
+               coding == 'Data available' ~ 'Data available   ',
+               coding == 'Data missing' ~ 'Data missing    '
+               )) %>% 
+    ggplot(data = .) +
+    aes(bdi_category,
+        fill = coding) +
+    geom_bar(position = position_fill()) +
+    geom_text(stat = 'count',
+              position = position_fill(),
+              aes(label = ..count..),
+              colour = '#000000',
+              vjust = 1.5,
+              size = 7.5) +
+    labs(x = 'Depression severity',
+         y = 'Proportion of participants') +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_fill_manual(values = c('#56B4E9', '#E69F00')) +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'top',
+          legend.title = element_blank(),
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_blank(),
+          axis.ticks = element_blank())
+
+p2
+```
+
+<img src="figures/dropout-predictors/manuscript-2.png" width="672" style="display: block; margin: auto;" />
+
+```r
+ggsave(filename = 'figure-2_colourB.pdf',
+       height = 8, width = 10, units = 'in')
+
+# Greyscale
+p3 <- bdi %>% 
+    filter(!is.na(bdi_category)) %>% 
+    mutate(bdi_category = fct_recode(bdi_category,
+                                     Minimal = 'none-minimal',
+                                     Mild = 'mild',
+                                     Moderate = 'moderate-severe',
+                                     Severe = 'severe'),
+           coding = case_when(
+               coding == 'Data available' ~ 'Data available   ',
+               coding == 'Data missing' ~ 'Data missing    '
+               )) %>% 
+    ggplot(data = .) +
+    aes(bdi_category,
+        fill = coding) +
+    geom_bar(position = position_fill()) +
+    geom_text(stat = 'count',
+              position = position_fill(),
+              aes(label = ..count..),
+              colour = '#000000',
+              vjust = 1.5,
+              size = 7.5) +
+    labs(x = 'Depression severity',
+         y = 'Proportion of participants') +
+    scale_x_discrete(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    scale_fill_manual(values = c('#888888', '#BFBFBF')) +
+    theme_bw(base_size = 26) +
+    theme(legend.position = 'top',
+          legend.title = element_blank(),
+          panel.border = element_blank(),
+          panel.grid = element_blank(),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
+          axis.text = element_text(colour = '#000000'),
+          axis.line = element_blank(),
+          axis.ticks = element_blank())
+
+p3
+```
+
+<img src="figures/dropout-predictors/manuscript-3.png" width="672" style="display: block; margin: auto;" />
+
+```r
+ggsave(filename = 'figure-2_greyscale.pdf',
+       height = 8, width = 10, units = 'in')
+```
 
 
 ----
