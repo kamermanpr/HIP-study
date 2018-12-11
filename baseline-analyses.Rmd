@@ -1,43 +1,50 @@
 ---
-title: "Analysis of baseline data"
+title: "HIP: Analysis of baseline data"
+subtitle: "Null hypothesis significance testing (NHST)"
 author: "Peter Kamerman and Tory Madden"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
-output:
-    html_document:
-        theme: yeti
-        highlight: pygments
-        df_print: paged
-        toc: true
-        toc_float: true
-        code_folding: show
 ---
 
 ```{r setup, include = FALSE}
 # Load packages
 library(magrittr)
 library(tidyverse)
+library(coin)
 library(reporttools) # for pairwise fisher's exact test
+
+# Set ggplot2 theme
+theme_set(new = theme_bw(base_size = 14))
 
 # Set knitr options
 knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
+                      fig.retina = 2,
                       fig.align = 'center',
-                      fig.width = 8,
-                      fig.height = 8)
+                      fig.path = 'figures/baseline-analysis/',
+                      fig.width = 7,
+                      fig.height = 7)
 ```
 
-## Import data
+----
+
+Summary and significance testing of core baseline data.
+
+----
+
+# Import and process data
+
 ```{r import_data}
 # Read in site and group info
 info <- read_rds('./data/demographics.rds') %>%
-    select(ID, Site, Group, Sex) %>%
-    mutate(ID = stringr::str_to_upper(ID))
+    select(ID, Site, Group, Sex)
 
 # Read in data files
 files <- list.files(path = './data/',
                     pattern = '*.rds') %>%
     # Remove unnessesary files
-    .[!. %in% c('demographics.rds', 'simmonds.rds', 'bpi_factor_analysis.rds')] %>%
+    .[!. %in% c('demographics.rds', 
+                'simmonds.rds', 
+                'bpi_factor_analysis.rds')] %>%
     # Add path
     paste0('./data/', .)
 
@@ -45,52 +52,35 @@ files <- list.files(path = './data/',
 data <- map(.x = files,
             ~ read_rds(path = .x))
 
-# Name items in the 'data'
-names(data) <- c('bdi', 'bpi', 'eq5d', 'se6')
-
 # Join to info 
 data %<>% 
     map(.x = .,
-         ~ left_join(info, .x))
+         ~ left_join(info, .x)) 
 
-# Import demographics
-demographics <- read_rds('./data/demographics.rds')
-
-# Clean-up environment
-rm(info, files)
-```
-
-## Quick look
-```{r quick_look}
-# Head
-map(.x = data,
-    ~ head(.x))
-head(demographics)
-```
-
-## Process data 
-```{r clean_data, results = 'hide'}
 # Select baseline data columns
 data %<>%
     map(~ select(.x, 
                  ID, Site, Group, contains('BL'))) %>%
     # Add a urban/rural code
     map(~ mutate(.x,
-                 Type = ifelse(Site == 'u1' | Site == 'u2',
+                 Type = ifelse(Site == 'U1' | Site == 'U2',
                                yes = 'urban',
                                no = 'rural'))) %>%
     # Reorder columns
     map(~ select(.x,
                  ID, Site, Type, Group, everything()))
 
-# Extract list to environment (what a cool function!)
-list2env(data, 
-         envir = .GlobalEnv)
+# Name items in 'data'
+names(data) <- c('bdi', 'bpi', 'eq5d', 'se6')
 
-# Select relevant baseline demographics variables
-demographics %<>%
-    select(ID, Site, Group, Age, CD4_recent, 
-           SOS_mnemonic, Occupation, Years_education) %>%
+# Split into individual dataframes
+list2env(data,
+         envir = globalenv())
+
+# Import demographics and clean like the rest
+demo <- read_rds('./data/demographics.rds') %>% 
+    # Select baseline columns
+    select(ID, Site, Group, contains('BL')) %>% 
     # Add a urban/rural code
     mutate(Type = ifelse(Site == 'u1' | Site == 'u2',
                          yes = 'urban',
@@ -98,16 +88,28 @@ demographics %<>%
     # Reorder columns
     select(ID, Site, Type, Group, everything())
 
-# Define comparison pairs for site
-pairs <- combn(x = c('r1', 'r2', 'u1', 'u2'), 
-               m = 2) %>%
-    t(.) %>%
-    as_data_frame(.) %>%
-    mutate(comparison = paste(V1, 'vs', V2))
+# Clean-up environment
+rm(data, info, files)
 ```
 
-## BPI: Pain severity scale
+----
+
+# Quick look
+
+```{r quick_look}
+glimpse(bpi)
+glimpse(bdi)
+glimpse(eq5d)
+glimpse(se6)
+glimpse(demo)
+```
+
+----
+
+# BPI: Pain severity scale
+
 ### Process data
+
 ```{r bdi_pss}
 # Calculate PSS
 bpi_pss <- bpi %>%
@@ -119,51 +121,68 @@ bpi_pss <- bpi %>%
            PSS = as.integer(round(PSS)))
 ```
 
-### Plots and analysis
-```{r pss_plots}
+### Compare sites
+
+#### Plot
+
+```{r pss_plot}
 # Plot: PSS by site
 ggplot(data = bpi_pss) +
     aes(x = Site,
         y = PSS) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
     scale_y_continuous(breaks = seq(0, 10, 2)) +
-    labs(title = 'PSS score by study site',
-         caption = '"r" = rural, "u" = urban',
+    labs(title = 'Baseline pain severity score by study site',
+         subtitle = 'R: rural | U: urban',
+         caption = "(R1: calculation of PSS excludes 'pain on average')",
          x = 'Study site',
-         y = 'PSS')
+         y = 'Pain severity score [0-10]')
+```
 
+#### Hypothesis testing
+
+```{pss_nhst}
 # Hypothesis test: PSS by site
-knitr::kable(
-    broom::tidy(
-        kruskal.test(PSS ~ as.factor(Site), 
-                     data = bpi_pss)))
-
+kruskal_test(PSS ~ factor(Site),
+             data = bpi_pss)
 
 # Delta confidence interval and p-value
 ## Simplify and spread the data
 bpi_pss.ci <- bpi_pss %>%
     select(ID, Site, PSS) %>%
     spread(key = Site,
-           value = PSS) 
+           value = PSS) %>%
+    select(-ID)
+
+# Create an array of column combinations
+pairs <- combn(x = c('R1', 'R2', 'U1', 'U2'),
+               m = 2)
+
+# Create a vector of pair_names 
+pair_names <- paste(pairs[1, ], 'vs', pairs[2, ])
 
 ## Define a list of length 6 (number of comparison pairs)
 foo <- vector(mode = 'list', length = 6)
 
 ## Loop through the list, perform a Wilcox test and tabulate
 for(i in 1:6) {
-    foo[[i]] <- wilcox.test(x = bpi_pss.ci[[pairs$V1[[i]]]],
-                          y = bpi_pss.ci[[pairs$V2[[i]]]],
-                          conf.int = TRUE)[c(3, 8:9)]
+    foo[[i]] <- wilcox.test(x = bpi_pss.ci[[pairs[1, i]]],
+                            y = bpi_pss.ci[[pairs[2, i]]],
+                            conf.int = TRUE)[c(1, 3, 8:9)]
     
-    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
-                           conf.low = foo[[i]]$conf.int[[1]],
-                           conf.high = foo[[i]]$conf.int[[2]],
+    foo[[i]] <- data_frame(statistic = foo[[i]]$statistic,
+                           'difference in location' = round(foo[[i]]$estimate, 3),
+                           '95% CI of difference' = paste(
+                               round(foo[[i]]$conf.int[[1]], 3), 
+                               'to', 
+                               round(foo[[i]]$conf.int[[2]], 3)),
                            # Adjust p-value for multiple comparisons
-                           p.value = p.adjust(foo[[i]]$p.value, 
+                           p.value = round(p.adjust(foo[[i]]$p.value, 
                                               method = 'holm', 
-                                              n = 6))
+                                              n = 6), 3))
 }
 
 ## Print table
@@ -171,92 +190,120 @@ for(i in 1:6) {
 map_df(.x = foo,
        ~ .x) %>%
     ### Add a 'comparison' column, sort, and arrange
-    mutate(comparison = pairs$comparison) %>%
+    mutate(comparison = pair_names) %>%
     select(comparison, everything()) %>%
     arrange(p.value) %>%
-    knitr::kable(caption = 'Median of the difference in BPI-PSS score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+    knitr::kable(caption = 'Median of the difference in BPI-PSS score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)',
+                 align = 'lrrrr')
+```
 
+### Compare urban vs rural
+
+#### Plot 
+
+```{r pss_plot2}
 # PSS by urban/rural
 ggplot(data = bpi_pss) +
     aes(x = Type,
         y = PSS) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
     scale_y_continuous(breaks = seq(0, 10, 2)) +
-    labs(title = 'PSS score by urban/rural',
+    labs(title = 'Baseline pain severity score by urban/rural',
+         caption = "(R1: calculation of PSS excludes 'pain on average')",
          x = 'Study site',
-         y = 'PSS')
-
-# Hypothesis test: PSS by urban/rural
-knitr::kable(
-    broom::tidy(
-        wilcox.test(PSS ~ as.factor(Type), 
-                    data = bpi_pss,
-                    conf.int = TRUE)),
-    caption = 'Median of the difference in BPI-PSS score (estimate) between urban and rural study sites')
+         y = 'Pain severity score [0-10]')
 ```
 
-****
+#### Hypothesis testing
 
-## BPI: Pain interference scale
+```{r pss_nhst2}
+# Hypothesis test: PSS by urban/rural
+wilcox_test(PSS ~ factor(Type),
+            data = bpi_pss,
+            conf.int = TRUE)
+```
+
+----
+
+# BPI: Pain interference scale
+
 ### Process data
+
 ```{r bdi_pis}
-# Calculate PSS
+# Calculate PIS
 bpi_pis <- bpi %>%
     # Select columns
     select(ID, Site, Type, 12:18) %>%
-    # Calculate PSS
+    # Calculate PIS
     mutate(PIS = rowMeans(.[4:10], na.rm = TRUE),
            # Treat PSS as a discrete scale
            PIS = as.integer(round(PIS)))
 ```
 
-### Plots and analysis
-```{r pis_plots}
+### Compare sites
+
+#### Plot
+
+```{r pis_plot}
 # Plot: PIS by site
 ggplot(data = bpi_pis) +
     aes(x = Site,
         y = PIS) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
     scale_y_continuous(breaks = seq(0, 10, 2)) +
-    labs(title = 'PIS score by study site',
-         caption = '"r" = rural, "u" = urban',
+    labs(title = 'Baseline pain interference score by study site',
+         subtitle = 'R: rural | U: urban',
          x = 'Study site',
-         y = 'PIS')
+         y = 'Pain interference score [0-10]')
+```
 
-# Hypothesis test: PIS by site
-knitr::kable(
-    broom::tidy(
-        kruskal.test(PIS ~ as.factor(Site), 
-                     data = bpi_pis)))
+#### Hypothesis testing
 
+```{r pis_nhst}
+# Hypothesis test: PSS by site
+kruskal_test(PIS ~ factor(Site),
+             data = bpi_pis)
 
 # Delta confidence interval and p-value
 ## Simplify and spread the data
 bpi_pis.ci <- bpi_pis %>%
     select(ID, Site, PIS) %>%
     spread(key = Site,
-           value = PIS) 
+           value = PIS) %>%
+    select(-ID)
+
+# Create an array of column combinations
+pairs <- combn(x = c('R1', 'R2', 'U1', 'U2'),
+               m = 2)
+
+# Create a vector of pair_names 
+pair_names <- paste(pairs[1, ], 'vs', pairs[2, ])
 
 ## Define a list of length 6 (number of comparison pairs)
 foo <- vector(mode = 'list', length = 6)
 
 ## Loop through the list, perform a Wilcox test and tabulate
 for(i in 1:6) {
-    foo[[i]] <- wilcox.test(x = bpi_pis.ci[[pairs$V1[[i]]]],
-                          y = bpi_pis.ci[[pairs$V2[[i]]]],
-                          conf.int = TRUE)[c(3, 8:9)]
+    foo[[i]] <- wilcox.test(x = bpi_pis.ci[[pairs[1, i]]],
+                            y = bpi_pis.ci[[pairs[2, i]]],
+                            conf.int = TRUE)[c(1, 3, 8:9)]
     
-    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
-                           conf.low = foo[[i]]$conf.int[[1]],
-                           conf.high = foo[[i]]$conf.int[[2]],
+    foo[[i]] <- data_frame(statistic = foo[[i]]$statistic,
+                           'difference in location' = round(foo[[i]]$estimate, 3),
+                           '95% CI of difference' = paste(
+                               round(foo[[i]]$conf.int[[1]], 3), 
+                               'to', 
+                               round(foo[[i]]$conf.int[[2]], 3)),
                            # Adjust p-value for multiple comparisons
-                           p.value = p.adjust(foo[[i]]$p.value, 
+                           p.value = round(p.adjust(foo[[i]]$p.value, 
                                               method = 'holm', 
-                                              n = 6))
+                                              n = 6), 3))
 }
 
 ## Print table
@@ -264,36 +311,46 @@ for(i in 1:6) {
 map_df(.x = foo,
        ~ .x) %>%
     ### Add a 'comparison' column, sort, and arrange
-    mutate(comparison = pairs$comparison) %>%
+    mutate(comparison = pair_names) %>%
     select(comparison, everything()) %>%
     arrange(p.value) %>%
-    knitr::kable(caption = 'Median of the difference in BPI-PIS score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+    knitr::kable(caption = 'Median of the difference in BPI-PIS score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)',
+                 align = 'lrrrr')
+```
 
-# PSS by urban/rural
+### Compare rural vs urban
+
+#### Plot
+
+```{r pis_plot2}
+# PIS by urban/rural
 ggplot(data = bpi_pis) +
     aes(x = Type,
         y = PIS) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
     scale_y_continuous(breaks = seq(0, 10, 2)) +
-    labs(title = 'PIS score by urban/rural',
+    labs(title = 'Baseline pain interference score by urban/rural',
          x = 'Study site',
-         y = 'PIS')
-
-# Hypothesis test: PSS by urban/rural
-knitr::kable(
-    broom::tidy(
-        wilcox.test(PIS ~ as.factor(Type), 
-                    data = bpi_pis,
-                    conf.int = TRUE)),
-    caption = 'Median of the difference in BPI-PIS score (estimate) between urban and rural study sites')
+         y = 'Pain interference score [0-10]')
 ```
 
-****
+#### Hypothesis testing
 
-## SE-6
+```{r pis_nhst2}
+wilcox_test(PIS ~ factor(Type), 
+            data = bpi_pis,
+            conf.int = TRUE)
+```
+
+----
+
+# SE-6
+
 ### Process data
+
 ```{r se6}
 se6_mean <- se6 %>%
     # Calculate mean score
@@ -302,51 +359,67 @@ se6_mean <- se6 %>%
            Mean_score = as.integer(round(Mean_score)))
 ```
 
-### Plots and analysis
-```{r se6_plots}
+### Compare sites
+
+#### Plot
+
+```{r se6_plot}
 # Plot: se6 by site
 ggplot(data = se6_mean) +
     aes(x = Site,
         y = Mean_score) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
     scale_y_continuous(breaks = seq(0, 10, 2)) +
-    labs(title = 'SE-6 score by study site',
-         caption = '"r" = rural, "u" = urban',
+    labs(title = 'Baseline mean SE-6 score by study site',
+         subtitle = 'R: rural | U: urban',
          x = 'Study site',
-         y = 'SE-6 score')
+         y = 'Mean SE-6 score')
+```
 
+#### Hypothesis testing
+
+```{r se6_nhst}
 # Hypothesis test: se6 by site
-knitr::kable(
-    broom::tidy(
-        kruskal.test(Mean_score ~ as.factor(Site), 
-                     data = se6_mean)))
-
+kruskal_test(Mean_score ~ factor(Site),
+             data = se6_mean)
 
 # Delta confidence interval and p-value
 ## Simplify and spread the data
 se6_mean.ci <- se6_mean %>%
     select(ID, Site, Mean_score) %>%
     spread(key = Site,
-           value = Mean_score) 
+           value = Mean_score) %>% 
+    select(-ID)
+
+# Create an array of column combinations
+pairs <- combn(x = c('R1', 'R2', 'U1', 'U2'),
+               m = 2)
+
+# Create a vector of pair_names 
+pair_names <- paste(pairs[1, ], 'vs', pairs[2, ])
 
 ## Define a list of length 6 (number of comparison pairs)
 foo <- vector(mode = 'list', length = 6)
 
 ## Loop through the list, perform a Wilcox test and tabulate
 for(i in 1:6) {
-    foo[[i]] <- wilcox.test(x = se6_mean.ci[[pairs$V1[[i]]]],
-                          y = se6_mean.ci[[pairs$V2[[i]]]],
-                          conf.int = TRUE)[c(3, 8:9)]
+    foo[[i]] <- wilcox.test(x = se6_mean.ci[[pairs[1, i]]],
+                            y = se6_mean.ci[[pairs[2, i]]],
+                            conf.int = TRUE)[c(1, 3, 8:9)]
     
-    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
-                           conf.low = foo[[i]]$conf.int[[1]],
-                           conf.high = foo[[i]]$conf.int[[2]],
+    foo[[i]] <- data_frame(statistic = foo[[i]]$statistic,
+                           'difference in location' = round(foo[[i]]$estimate, 3),
+                           '95% CI of difference' = paste(
+                               round(foo[[i]]$conf.int[[1]], 3), 
+                               'to', 
+                               round(foo[[i]]$conf.int[[2]], 3)),
                            # Adjust p-value for multiple comparisons
-                           p.value = p.adjust(foo[[i]]$p.value, 
+                           p.value = round(p.adjust(foo[[i]]$p.value, 
                                               method = 'holm', 
-                                              n = 6))
+                                              n = 6), 3))
 }
 
 ## Print table
@@ -354,123 +427,112 @@ for(i in 1:6) {
 map_df(.x = foo,
        ~ .x) %>%
     ### Add a 'comparison' column, sort, and arrange
-    mutate(comparison = pairs$comparison) %>%
+    mutate(comparison = pair_names) %>%
     select(comparison, everything()) %>%
     arrange(p.value) %>%
-    knitr::kable(caption = 'Median of the difference in SE-6 score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
+    knitr::kable(caption = 'Median of the difference in mean SE-6 score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)',
+                 align = 'lrrrr')
+```
 
+### Compare urban vs rural
+
+#### Plot
+
+```{r se6_plot2}
 # Plot: se6 by urban/rural
 ggplot(data = se6_mean) +
     aes(x = Type,
         y = Mean_score) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
     scale_y_continuous(breaks = seq(0, 10, 2)) +
-    labs(title = 'SE-6 score by urban/rural',
+    labs(title = 'Baseline mean SE-6 score by urban/rural',
          x = 'Study site',
-         y = 'SE-6 score')
-
-# Hypothesis test: se6 by urban/rural
-knitr::kable(
-    broom::tidy(
-        wilcox.test(Mean_score ~ as.factor(Type), 
-                    data = se6_mean,
-                    conf.int = TRUE)),
-    caption = 'Median of the difference in SE-6 score (estimate) between urban and rural study sites')
+         y = 'Mean SE-6 score')
 ```
 
-****
+#### Hypothesis testing
 
-## EQ5D VAS
+```{r se6_nhst2}
+# Hypothesis test: se6 by urban/rural
+wilcox_test(Mean_score ~ factor(Type), 
+            data = se6_mean,
+            conf.int = TRUE)
+```
+
+----
+
+# EQ5D VAS
+
 ### Process data
+
 ```{r eq5d}
 eq5d_vas <- eq5d %>%
     # Select columns
-    select(ID, Site, Type, SOH_BL) %>%
+    select(ID, Site, Type, State_of_health.BL) %>%
     # Rename column
-    rename(VAS_score = SOH_BL)
+    rename(VAS_score = State_of_health.BL) %>% 
+    select(-ID)
 ```
 
-### Plots and analysis
+### Compare sites
+
+#### Plot
+
 ```{r eq5d_plots}
 # Plot: EQ5D VAS by site
 ggplot(data = eq5d_vas) +
     aes(x = Site,
         y = VAS_score) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
-    labs(title = 'EQ5D VAS score by study site',
-         caption = '"r" = rural, "u" = urban',
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
+    scale_y_continuous(breaks = seq(0, 100, 20)) +
+    labs(title = 'Baseline EQ-5D VAS score by study site',
+         subtitle = 'R: rural | U: urban',
          x = 'Study site',
-         y = 'EQ5D VAS rating')
+         y = 'EQ-5D VAS [0-100]')
+```
 
-# Hypothesis test: EQ5D VAS by site
-knitr::kable(
-    broom::tidy(
-        kruskal.test(VAS_score ~ as.factor(Site), 
-                     data = eq5d_vas)))
+# Hypothesis testing
 
+```{r eq5d_nhst}
+# Hypothesis test: se6 by site
+kruskal_test(VAS_score ~ factor(Site),
+             data = eq5d_vas)
+```
 
-# Delta confidence interval and p-value
-## Simplify and spread the data
-eq5d_vas.ci <- eq5d_vas %>%
-    select(ID, Site, VAS_score) %>%
-    spread(key = Site,
-           value = VAS_score) 
+### Compare urban vs rural
 
-## Define a list of length 6 (number of comparison pairs)
-foo <- vector(mode = 'list', length = 6)
+#### Plot
 
-## Loop through the list, perform a Wilcox test and tabulate
-for(i in 1:6) {
-    foo[[i]] <- wilcox.test(x = eq5d_vas.ci[[pairs$V1[[i]]]],
-                          y = eq5d_vas.ci[[pairs$V2[[i]]]],
-                          conf.int = TRUE)[c(3, 8:9)]
-    
-    foo[[i]] <- data_frame(estimate = foo[[i]]$estimate,
-                           conf.low = foo[[i]]$conf.int[[1]],
-                           conf.high = foo[[i]]$conf.int[[2]],
-                           # Adjust p-value for multiple comparisons
-                           p.value = p.adjust(foo[[i]]$p.value, 
-                                              method = 'holm', 
-                                              n = 6))
-}
-
-## Print table
-### Convert to a single dataframe
-map_df(.x = foo,
-       ~ .x) %>%
-    ### Add a 'comparison' column, sort, and arrange
-    mutate(comparison = pairs$comparison) %>%
-    select(comparison, everything()) %>%
-    ### Remove p-value (not required)
-    select(-p.value) %>%
-    knitr::kable(caption = 'Median of the difference in EQ5D score (estimate) between study sites (pairwise Wilcoxon rank sum tests with Holm corrected p-value)')
-
+```{r eq5d_plot2}
 # Plot: EQ5D VAS by urban/rural
 ggplot(data = eq5d_vas) +
     aes(x = Type,
         y = VAS_score) +
-    geom_boxplot() +
-    geom_jitter(height = 0,
-                shape = 21) +
-    scale_y_continuous(breaks = seq(0, 10, 2)) +
+    geom_boxplot(fill = '#666666') +
+    geom_point(position = position_jitter(width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF') +
+    scale_y_continuous(breaks = seq(0, 100, 20)) +
     labs(title = 'EQ5D VAS rating by urban/rural',
          x = 'Study site',
-         y = 'EQ5D VAS rating')
-
-# Hypothesis test: EQ5D VAS by urban/rural
-knitr::kable(
-    broom::tidy(
-        wilcox.test(VAS_score ~ as.factor(Type), 
-                    data = eq5d_vas,
-                    conf.int = TRUE)),
-    caption = 'Median of the difference in EQ5D VAS rating (estimate) between urban and rural study sites')
+         y = 'EQ5D VAS [0-100]')
 ```
 
-****
+#### Hypothesis testing
+
+```{r eq5d_nhst2}
+wilcox_test(VAS_score ~ factor(Type), 
+            data = eq5d_vas,
+            conf.int = TRUE)
+```
+
+----
 
 ## BDI
 ### Process data
