@@ -1,0 +1,420 @@
+---
+title: "Supplement 1"
+subtitle: "Summary statistics for baseline variables"
+author: "Peter Kamerman and Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(tidyverse)
+library(magrittr)
+library(skimr)
+
+# Skimr options
+## New factor function
+top_counts <- function(x){
+    tab <- table(x, useNA = "no")
+    names_tab <- names(tab)
+    if (is.element("", names_tab)) {
+        names_tab[names_tab == ""] <- "empty"
+        warning("Variable contains value(s) of \"\" that have been converted to \"empty\".")
+    }
+    out <- rlang::set_names(as.integer(tab), names_tab)
+    sort(out, decreasing = TRUE)
+}
+
+skim_with(numeric = list(hist = NULL, p0 = NULL, p25 = NULL, 
+                         p50 = NULL, p75 = NULL, p100 = NULL,
+                         median = ~ median(., na.rm = TRUE),
+                         q25 = ~ quantile(., 0.25, na.rm = TRUE),
+                         q75 = ~ quantile(., 0.75, na.rm = TRUE),
+                         min = ~ min(., na.rm = TRUE),
+                         max = ~ max(., na.rm = TRUE)),
+          factor = list(ordered = NULL, top_counts = ~ top_counts(.)))
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.path = 'figures/supplement-01-summary-statistics/')
+```
+
+----
+
+Tabular summary statistics of baseline variables (time = 0 weeks) for the whole cohort, and stratified by sex and study site. 
+
+----
+
+# Import data
+
+```{r import_data}
+# Demographic data
+demo <- read_rds('data-cleaned/demographics.rds')
+
+# BDI
+bdi <- read_rds('data-cleaned/bdi.rds')
+
+# BPI
+bpi <- read_rds('data-cleaned/bpi.rds')
+
+# EQ5D
+eq5d <- read_rds('data-cleaned/eq5d.rds') 
+
+# SE6
+se6 <- read_rds('data-cleaned/se6.rds')
+```
+
+----
+
+# Clean data
+
+## Demographic data
+
+```{r demographics}
+demo %<>%
+    # Convert sex to factor
+    mutate(Sex = factor(Sex)) %>% 
+    # Rename Years_on_ART
+    rename(Years_on_HAART = Years_on_ART) %>% 
+    # Convert SOS_mnemonic to factor
+    mutate(SOS_mnemonic = factor(SOS_mnemonic)) %>% 
+    # Transfer CD4_nadir data to CD4_recent if missing CD4_recent data 
+    # (i.e. get the most updated CD4 count available)
+    mutate(CD4_most_recent =
+               ifelse(is.na(CD4_recent),
+                      yes = CD4_nadir,
+                      no = CD4_recent)) %>%
+    # Categorise years of schooling into 7 years or less, 8-12 years, 
+    # and more than 12 years of education, factorize, and then order 
+    mutate(Education = case_when(
+        Years_education <= 7 ~ '0-7 years',
+        Years_education > 7 & Years_education <= 12 ~ '8-12 years',
+        Years_education > 12 ~ 'More than 12 years'),
+        Education = factor(Education,
+                           levels = c('0-7 years',
+                                      '8-12 years',
+                                      'More than 12 years'),
+                           ordered = TRUE)) %>%
+    # Recode HAART and order
+    mutate(HAART = case_when(
+        HAART == 'first-line' ~ 'first-line HAART',
+        HAART == 'second-line' ~ 'second-line HAART',
+        HAART == 'monitoring' ~ 'no HAART'),
+        HAART = factor(HAART,
+                       levels = c('no HAART',
+                                  'first-line HAART', 
+                                  'second-line HAART'),
+                       ordered = TRUE)) %>% 
+    # Recode and order occupation categories
+    mutate(Employment = str_replace_all(Occupation,
+                                        pattern = '^unemployed - .+',
+                                        replacement = 'unemployed'),
+           Employment = factor(Employment,
+                               levels = c('employed', 'unemployed',
+                                          'student/volunteer',
+                                          'unable to work - disability grant'))) %>% 
+    # Select required columns
+    select(ID, Study_site, Sex, Age_years, Years_on_HAART,
+           CD4_most_recent, HAART, Education, Employment,
+           SOS_mnemonic)
+
+# Make a site/sex filter
+sorter <- demo %>% 
+    select(ID, Study_site, Sex)
+```
+
+## Brief Pain Inventory (BPI)
+
+```{r bpi}
+bpi %<>%
+    # Capitalize IDs
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    # Select baseline values
+    select(ID,
+           ends_with('BL')) %>%
+    # Select columns
+    select(ID, 3:6, 9:15) %>%
+    # Calculate Pain Severity Score (PSS) at baseline
+    mutate(PSS = rowMeans(.[2:5], na.rm = TRUE),
+           # Treat PSS as a discrete scale
+           PSS = round(PSS)) %>%
+    # Calculate Pain Interference Index (PIS) at baseline
+    mutate(PIS = rowMeans(.[6:12], na.rm = TRUE),
+           # Treat PIS as a discrete scale
+           PIS = round(PIS)) %>%
+    #remove unwanted columns
+    select(ID, PSS, PIS) %>% 
+    left_join(sorter)
+```
+
+## Beck's Depression Inventory (BDI)
+
+```{r becks}
+bdi %<>%
+    # Capitalize IDs
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    # Make a total score column
+    mutate_at(2:ncol(bdi), 
+              as.numeric) %>%
+    mutate(BDI = rowSums(.[2:ncol(bdi)], na.rm = TRUE),
+           # Treat BDI as a discrete scale
+           BDI = round(BDI)) %>%
+    select(ID, BDI) %>% 
+    left_join(sorter)
+```
+
+## EQ-5D (3L)
+
+```{r eq5d}
+eq5d %<>%
+    # Capitalize IDs
+    mutate(ID = stringr::str_to_upper(ID)) 
+
+# Calculate eq5d index score
+## Create basic term = 1 for all cases in new column
+eq5d$index_core <- 1
+
+## Sum all rows for total index score
+eq5d %<>% 
+    mutate(index_sum = rowSums(.[2:6], na.rm = TRUE))
+
+# Create constant term to subtract for domain scores > 1 (i.e. sum > 5)
+eq5d %<>% 
+    mutate(index_constant = ifelse(index_sum > 5, 
+                                   yes = 0.081, 
+                                   no = 0))
+
+## Create variable for subtraction for each domain
+eq5d %<>% 
+    mutate(Mobility_index = ifelse(Mobility.BL == 2, 
+                                   yes = 0.069,
+                                   no = ifelse(Mobility.BL == 3, 
+                                               yes = 0.314,
+                                               no = 0))) %>% 
+    mutate(Self_care_index = ifelse(Self_care.BL == 2,
+                                    yes = 0.104,
+                                    no = ifelse(Self_care.BL == 3, 
+                                                yes = 0.214,
+                                                no = 0))) %>% 
+    mutate(Usual_activities_index = ifelse(Usual_activities.BL == 2, 
+                                           yes = 0.036,
+                                           no = ifelse(Usual_activities.BL == 3, 
+                                                       yes = 0.094,
+                                                       no = 0))) %>% 
+    mutate(Pain_index = ifelse(Pain.BL == 2, 
+                               yes = 0.123,
+                               no = ifelse(Pain.BL == 3, 
+                                           yes = 0.386,
+                                           no = 0))) %>% 
+    mutate(Anxiety_depression_index = ifelse(Anxiety_and_depression.BL == 2, 
+                                             yes = 0.071,
+                                             no = ifelse(Anxiety_and_depression.BL == 3, 
+                                                         yes = 0.236,
+                                                         no = 0)))
+
+## Compute the index score using: 
+## index = index_core - constant_index - Mobility_index...
+eq5d %<>% 
+    mutate(EQ5D_index = index_core - index_constant - Mobility_index 
+           - Self_care_index - Usual_activities_index - Pain_index 
+           - Anxiety_depression_index) %>% 
+    # Convert State_of_health VAS to double
+    mutate(EQ5D_VAS = as.numeric(State_of_health.BL))
+
+# Select columns
+eq5d %<>% select(ID,
+                 EQ5D_index,
+                 EQ5D_VAS) %>% 
+    left_join(sorter)
+```
+
+## Self-efficacy Questionnaire 6 (SE6)
+
+```{r se6}
+se6 %<>%
+    # Capitalize IDs
+    mutate(ID = stringr::str_to_upper(ID)) %>%
+    # Calculate SE6 at baseline
+    mutate(SE6 = rowMeans(.[2:7], na.rm = TRUE),
+           # Treat SE6 as a discrete scale
+           SE6 = round(SE6)) %>%
+    #remove unwanted columns
+    select(ID,
+           SE6) %>% 
+    left_join(sorter)
+```
+
+----
+
+# Demographic data
+
+## Continuous variables
+
+```{r demo_c}
+demo %>% 
+    select_if(is.numeric) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'Whole cohort',
+          align = 'llrrrrrrrrrr')
+
+demo %>% 
+    select(Study_site, Age_years, Years_on_HAART, CD4_most_recent) %>% 
+    group_by(Study_site) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By study site',
+          align = 'llrrrrrrrrrr')
+
+demo %>% 
+    select(Sex, Age_years, Years_on_HAART, CD4_most_recent) %>% 
+    group_by(Sex) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By sex',
+          align = 'llrrrrrrrrrr')
+```
+
+## Factor variables
+
+```{r demo_f}
+demo %>% 
+    select_if(is.factor) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'Whole cohort',
+          align = 'llrrrrr')
+
+demo %>% 
+    select(Study_site, Education, Employment, HAART, Sex, SOS_mnemonic) %>% 
+    group_by(Study_site) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By study site',
+          align = 'llrrrrr')
+
+demo %>% 
+    select(Sex, Education, Employment, HAART, Sex, SOS_mnemonic) %>% 
+    group_by(Sex) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By sex',
+          align = 'llrrrrrrrrrr')
+```
+
+----
+
+# Brief Pain Inventory
+
+- PSS: Pain severity
+- PIS: Pain interference
+
+## Continuous variables
+
+```{r bpi_c}
+bpi %>% 
+    select_if(is.numeric) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'Whole cohort',
+          align = 'llrrrrrrrrrr')
+
+bpi %>% 
+    select(Study_site, PIS, PSS) %>% 
+    group_by(Study_site) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By study site',
+          align = 'llrrrrrrrrrr')
+
+bpi %>% 
+    select(Sex, PIS, PSS) %>% 
+    group_by(Sex) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By sex',
+          align = 'llrrrrrrrrrr')
+```
+
+----
+
+# Beck's Depression Index
+
+## Continuous variables
+
+```{r bdi_c}
+bdi %>% 
+    select_if(is.numeric) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'Whole cohort',
+          align = 'llrrrrrrrrrr')
+
+bdi %>% 
+    select(Study_site, BDI) %>% 
+    group_by(Study_site) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By study site',
+          align = 'llrrrrrrrrrr')
+
+bdi %>% 
+    select(Sex, BDI) %>% 
+    group_by(Sex) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By sex',
+          align = 'llrrrrrrrrrr')
+```
+
+----
+
+# EQ5D (3L)
+
+## Continuous variables
+
+```{r eq5d_c}
+eq5d %>% 
+    select_if(is.numeric) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'Whole cohort',
+          align = 'llrrrrrrrrrr')
+
+eq5d %>% 
+    select(Study_site, EQ5D_index, EQ5D_VAS) %>% 
+    group_by(Study_site) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By study site',
+          align = 'llrrrrrrrrrr')
+
+eq5d %>% 
+    select(Sex, EQ5D_index, EQ5D_VAS) %>% 
+    group_by(Sex) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By sex',
+          align = 'llrrrrrrrrrr')
+```
+
+----
+
+# Self-efficacy Questionnaire 6
+
+## Continuous variables
+
+```{r se6_c}
+se6 %>% 
+    select_if(is.numeric) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'Whole cohort',
+          align = 'llrrrrrrrrrr')
+
+se6 %>% 
+    select(Study_site, SE6) %>% 
+    group_by(Study_site) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By study site',
+          align = 'llrrrrrrrrrr')
+
+se6 %>% 
+    select(Sex, SE6) %>% 
+    group_by(Sex) %>% 
+    skim_to_wide(.) %>% 
+    kable(., caption = 'By sex',
+          align = 'llrrrrrrrrrr')
+```
+
+----
+
+# Session information
+
+```{r session_info, echo = FALSE}
+sessionInfo()
+```
