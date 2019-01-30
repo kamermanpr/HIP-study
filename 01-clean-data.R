@@ -37,6 +37,10 @@ group_e <- c('J2', 'J8', 'J13', 'J14', 'J15', 'J16', 'J20', 'J21', 'J25',
 # Extract demographic information
 demographics <- read_excel(path = 'data-original/demographics.xlsx', 
                            sheet = "demographics") %>%
+    # Fix weird import columns names
+    rename(DOD_Day = '..7',
+           DOD_Month = 'DOD',
+           DOD_Year = '..9') %>% 
     # Remove empty rows 
     filter(!is.na(Nr)) %>%
     # Convert '9999' missing to <NA>
@@ -44,7 +48,7 @@ demographics <- read_excel(path = 'data-original/demographics.xlsx',
                            yes = NA,
                            no = .))) %>%
     # Remove unnessary columns
-    select(-X__1, -X__2, -`CM Dx`, -DOB, -DOD, 
+    select(-`CM Dx`, -DOB, -DOD_Day, -DOD_Month, -DOD_Year,
            -Duration, -Infections, -Language) %>%
     # Fix column names
     rename(ID = Nr,
@@ -154,7 +158,7 @@ demographics %<>%
                                            yes = 'student/volunteer',
                                            no = Occupation)))
 
-# Remove Group E participants
+# Remove Group E participants (Group only relevant to one site)
 demographics %<>%
     filter(!ID %in% group_e)
 
@@ -164,6 +168,7 @@ glimpse(demographics)
 # Save outputs
 write_rds(x = demographics, 
           path = 'data-cleaned/demographics.rds')
+
 write_csv(x = demographics,
           path = 'data-cleaned/demographics.csv')
 
@@ -299,6 +304,7 @@ glimpse(BPI_clean)
 # Save outputs
 write_rds(x = BPI_clean, 
           path = 'data-cleaned/bpi.rds')
+
 write_csv(x = BPI_clean,
           path = 'data-cleaned/bpi.csv')
 
@@ -323,8 +329,8 @@ BDI_clean <- BDI_scores[-1,]
 
 # Fix column names and retain baseline scores only
 BDI_clean %<>%
-    rename(ID = X__1) %>% 
-    select(-starts_with('X__')) %>% 
+    rename(ID = '..1') %>% 
+    select(-starts_with('..')) %>% 
     setNames(c('ID', 'Sadness.BL', 'Pessimism.BL', 'Past_failures.BL', 
         'Loss_of_pleasure.BL', 'Guilty_feelings.BL', 'Punishment_feelings.BL',
         'Self_dislike.BL', 'Self_critical.BL', 'Suicidal.BL', 'Crying.BL',
@@ -364,6 +370,7 @@ glimpse(BDI_clean)
 # Save outputs
 write_rds(x = BDI_clean, 
           path = 'data-cleaned/bdi.rds')
+
 write_csv(x = BDI_clean,
           path = 'data-cleaned/bdi.csv')
 
@@ -388,8 +395,8 @@ EQ5D_clean <- EQ5D[-1,]
 
 # Fix column names and retain baseline scores only
 EQ5D_clean %<>%
-    rename(ID = X__1) %>% 
-    select(-starts_with('X__')) %>% 
+    rename(ID = '..1') %>% 
+    select(-starts_with('..')) %>% 
     setNames(c('ID', 'Mobility.BL', 'Self_care.BL', 'Usual_activities.BL',
                'Pain.BL', 'Anxiety_and_depression.BL', 'State_of_health.BL'))
 
@@ -414,6 +421,7 @@ glimpse(EQ5D_clean)
 # Save outputs
 write_rds(x = EQ5D_clean, 
           path = 'data-cleaned/eq5d.rds')
+
 write_csv(x = EQ5D_clean,
           path = 'data-cleaned/eq5d.csv')
 
@@ -438,8 +446,8 @@ SE6_clean <- SE6_scores[-1,]
 
 # Fix column names and retain baseline scores only
 SE6_clean %<>%
-    rename(ID = X__1) %>% 
-    select(-starts_with('X__')) %>% 
+    rename(ID = '..1') %>% 
+    select(-starts_with('..')) %>% 
     setNames(c('ID', 'Fatigue.BL', 'Physical_discomfort.BL', 
                'Emotional_distress.BL', 'Other_symptoms.BL', 'Tasks.BL',
                'Non_drug.BL'))
@@ -465,5 +473,13 @@ glimpse(SE6_clean)
 # Save outputs
 write_rds(x = SE6_clean, 
           path = 'data-cleaned/se6.rds')
+
 write_csv(x = SE6_clean,
           path = 'data-cleaned/se6.csv')
+
+############################################################
+#                                                          #
+#                         Clean-up                         #
+#                                                          #
+############################################################
+rm(list = ls())
