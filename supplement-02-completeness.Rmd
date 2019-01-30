@@ -1,8 +1,8 @@
 ---
-title: "Supplement 1"
+title: "Supplement 2"
 subtitle: "Data completeness"
 author: "Peter Kamerman"
-date: "`r format(Sys.Date(), '%d %B %Y')`"
+date: "Last updated: `r format(Sys.Date(), '%d %B %Y')`"
 ---
 
 ```{r setup, include = FALSE}
@@ -18,7 +18,7 @@ theme_set(new = theme_bw(base_size = 14))
 knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
                       fig.align = 'center',
-                      fig.path = 'figures/supplement-01-completeness/',
+                      fig.path = 'figures/03-completeness/',
                       fig.width = 9,
                       fig.height = 7)
 ```
@@ -92,6 +92,8 @@ bpi %>%
                          ordered = TRUE)) %>% 
     select(variable, time, subscale, missing, complete, n) %>% 
     arrange(time, subscale) %>% 
+    # Filter out pain interference
+    filter(subscale != 'Pain_interference') %>% 
     # Tabulate
     kable(caption = 'Tabular summary of data completeness across BPI items')
 ```
@@ -473,7 +475,7 @@ p1 <- ggplot(data = bpi_summary) +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
-          axis.line = element_line(size = 0.9))
+          axis.line = element_line(size = 0.9)); p1
 
 ggsave(filename = 'figures/figure-1_colourA.pdf',
        plot = p1,
@@ -505,7 +507,7 @@ p2 <- ggplot(data = bpi_summary) +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
-          axis.line = element_line(size = 0.9))
+          axis.line = element_line(size = 0.9)); p2
 
 ggsave(filename = 'figures/figure-1_colourB.pdf',
        plot = p2,
@@ -537,7 +539,7 @@ p3 <- ggplot(data = bpi_summary) +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)),
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
-          axis.line = element_line(size = 0.9))
+          axis.line = element_line(size = 0.9)); p3
 
 ggsave(filename = 'figures/figure-1_greyscale.pdf',
        plot = p3,

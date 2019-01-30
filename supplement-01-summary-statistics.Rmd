@@ -2,7 +2,7 @@
 title: "Supplement 1"
 subtitle: "Summary statistics for baseline variables"
 author: "Peter Kamerman and Tory Madden"
-date: "`r format(Sys.Date(), '%d %B %Y')`"
+date: "Last updated: `r format(Sys.Date(), '%d %B %Y')`"
 ---
 
 ```{r setup, include = FALSE}
@@ -36,7 +36,7 @@ skim_with(numeric = list(hist = NULL, p0 = NULL, p25 = NULL,
 # Set knitr options
 knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
-                      fig.path = 'figures/supplement-01-summary-statistics/')
+                      fig.path = 'figures/01-summary-statistics/')
 ```
 
 ----

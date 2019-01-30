@@ -1,5 +1,5 @@
 ---
-title: "Supplement 4"
+title: "Supplement 3"
 subtitle: "Exploratory analysis of predictors of study dropout by week 8"
 author: "Peter Kamerman and Tory Madden"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
@@ -10,15 +10,18 @@ date: "`r format(Sys.Date(), '%d %B %Y')`"
 library(magrittr)
 library(tidyverse)
 library(broom)
+library(knitr)
 
 # Set ggplot2 theme
 theme_set(new = theme_bw(base_size = 14))
 
 # Set knitr options
-knitr::opts_chunk$set(warning = FALSE,
-                      message = FALSE,
-                      fig.align = 'center',
-                      fig.path = 'figures/dropout-predictors/')
+opts_chunk$set(warning = FALSE,
+               message = FALSE,
+               fig.align = 'center',
+               fig.path = 'figures/03-dropout-predictors/',
+               fig.width = 9,
+               fig.height = 7)
 ```
 
 ----
@@ -37,7 +40,7 @@ bpi <- read_rds('data-cleaned/bpi.rds') %>%
 
 ## Demographics
 demo <- read_rds('data-cleaned/demographics.rds') %>% 
-    select(ID, Site, Group, Sex, Occupation)
+    select(ID, Study_site, Group, Sex, Occupation)
 
 ## BDI
 bdi <- read_rds('data-cleaned/bdi.rds') %>% 
@@ -88,7 +91,7 @@ demo %<>%
             Occupation == "unemployed - looking for work" | 
             Occupation == "unemployed - not looking for work" ~ "Unstable or no income"
         )) %>% 
-    select(ID, Site, Group, Sex, income_stability)
+    select(ID, Study_site, Group, Sex, income_stability)
 
 # Join with completeness ('bpi') data
 demo %<>% 
@@ -108,21 +111,21 @@ bdi %<>%
 # Join with demo to get site info
 bdi %<>%
     left_join(demo) %>%
-    select(ID, Site, Total.BL)
+    select(ID, Study_site, Total.BL)
 
 # Convert total BDI scores into categories 
 ## Site U1 used BDI II
 ## Site U2, R1, and R2 used BDI I
 bdi %<>% 
     mutate(bdi_category = case_when(
-    Site == "U1" & Total.BL <= 13 ~ "none-minimal",
-    Site == "U1" & Total.BL > 13 & Total.BL <= 19 ~ "mild",
-    Site == "U1" & Total.BL > 19 & Total.BL <= 28 ~ "moderate-severe",
-    Site == "U1" & Total.BL > 28 ~ "severe",
-    Site != "U1" & Total.BL <= 9 ~ "none-minimal",
-    Site != "U1" & Total.BL > 9 & Total.BL <= 18 ~ "mild",
-    Site != "U1" & Total.BL > 18 & Total.BL <= 29 ~ "moderate-severe",
-    Site != "U1" & Total.BL > 29 ~ "severe"))
+    Study_site == "U1" & Total.BL <= 13 ~ "none-minimal",
+    Study_site == "U1" & Total.BL > 13 & Total.BL <= 19 ~ "mild",
+    Study_site == "U1" & Total.BL > 19 & Total.BL <= 28 ~ "moderate-severe",
+    Study_site == "U1" & Total.BL > 28 ~ "severe",
+    Study_site != "U1" & Total.BL <= 9 ~ "none-minimal",
+    Study_site != "U1" & Total.BL > 9 & Total.BL <= 18 ~ "mild",
+    Study_site != "U1" & Total.BL > 18 & Total.BL <= 29 ~ "moderate-severe",
+    Study_site != "U1" & Total.BL > 29 ~ "severe"))
 
 # Convert bdi category into an ordered factor
 bdi %<>% mutate(bdi_category = factor(bdi_category, 
@@ -133,7 +136,7 @@ bdi %<>% mutate(bdi_category = factor(bdi_category,
                                       ordered = TRUE))
 # Drop Site column
 bdi %<>% 
-    select(-Site)
+    select(-Study_site)
 
 # Join with completeness ('bpi') data
 bdi %<>% 
@@ -169,7 +172,7 @@ mosaicplot(employ,
            xlab = '',
            ylab = '',
            cex = 1.2, 
-           color = c('#56B4E9', '#E69F00'))
+           color = c('#B2B2B2', '#323232'))
 
 # Fishers exact test
 knitr::kable(tidy(fisher.test(employ)),
@@ -209,7 +212,7 @@ mosaicplot(depression,
            xlab = '',
            ylab = '',
            cex = 1.2, 
-           color = c('#56B4E9', '#E69F00'))
+           color = c('#B2B2B2', '#323232'))
 
 # Logistic regression on ordered independent variable 
 model <- glm(factor(coding) ~ bdi_category, 
@@ -224,10 +227,10 @@ summary(model)
 
 # Print odds ratios
 ci <- exp(confint(model))[c(-1, -4)]
-oddR <- data_frame('Item' = names(exp(coef(model))[-1]),
-                   'Odds ratio' = round(exp(coef(model))[-1], 3),
-                   'Lower 95% CI' = round(ci[1:3], 3),
-                   'Upper 95% CI' = round(ci[4:6], 3))
+oddR <- tibble('Item' = names(exp(coef(model))[-1]),
+               'Odds ratio' = round(exp(coef(model))[-1], 3),
+               'Lower 95% CI' = round(ci[1:3], 3),
+               'Upper 95% CI' = round(ci[4:6], 3))
 
 knitr::kable(oddR,
              caption = 'Odds ratio of regression coefficients')
@@ -262,7 +265,7 @@ mosaicplot(group,
            xlab = 'Study group',
            ylab = '',
            cex = 1.2, 
-           color = c('#56B4E9', '#E69F00'))
+           color = c('#B2B2B2', '#323232'))
 
 # Fishers exact test
 knitr::kable(tidy(fisher.test(group)),
@@ -302,7 +305,7 @@ mosaicplot(sex,
            xlab = '',
            ylab = '',
            cex = 1.2, 
-           color = c('#56B4E9', '#E69F00'))
+           color = c('#B2B2B2', '#323232'))
 
 # Fishers exact test
 knitr::kable(tidy(fisher.test(sex)),
@@ -319,7 +322,7 @@ knitr::kable(tidy(fisher.test(sex)),
 
 Income stability, sex, and group allocation did not predict whether or not an individual's data were present at 8 weeks.  However, depression did: those with greater depression (on BDI) were more likely to have been lost to follow-up at the 8-week time point (main effect of depression severity: likelihood ratio = 11.31, df = 3, p = 0.01; OR for linear component of logistic regression = 4.01, 95% CI = 1.68 - 11.59).
 
-```{r manuscript, include = FALSE}
+```{r manuscript}
 #-- Manuscript plot --#
 # Plot of proportion of participants with missing data at each level of 
 # depression severity, as rated on the Beck's Depression Inventory. 
@@ -362,7 +365,7 @@ p1 <- bdi %>%
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
           axis.line = element_blank(),
-          axis.ticks = element_blank())
+          axis.ticks = element_blank()); p1
 
 ggsave(filename = 'figures/figure-2_colourA.pdf',
        plot = p1,
@@ -396,7 +399,7 @@ p2 <- bdi %>%
          y = 'Proportion of participants') +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    scale_fill_manual(values = c('#56B4E9', '#E69F00')) +
+    scale_fill_manual(values = c('#B2B2B2', '#323232')) +
     theme_bw(base_size = 26) +
     theme(legend.position = 'top',
           legend.title = element_blank(),
@@ -406,7 +409,7 @@ p2 <- bdi %>%
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
           axis.line = element_blank(),
-          axis.ticks = element_blank())
+          axis.ticks = element_blank()); p2
 
 ggsave(filename = 'figures/figure-2_colourB.pdf',
        plot = p2,
@@ -450,7 +453,7 @@ p3 <- bdi %>%
           axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
           axis.text = element_text(colour = '#000000'),
           axis.line = element_blank(),
-          axis.ticks = element_blank())
+          axis.ticks = element_blank()); p3
 
 ggsave(filename = 'figures/figure-2_greyscale.pdf',
        plot = p3,
@@ -458,7 +461,6 @@ ggsave(filename = 'figures/figure-2_greyscale.pdf',
        width = 10, 
        units = 'in')
 ```
-
 
 ----
 
