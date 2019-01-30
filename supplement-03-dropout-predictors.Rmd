@@ -19,7 +19,7 @@ theme_set(new = theme_bw(base_size = 14))
 opts_chunk$set(warning = FALSE,
                message = FALSE,
                fig.align = 'center',
-               fig.path = 'figures/03-dropout-predictors/',
+               fig.path = 'figures/supplement-03-dropout-predictors/',
                fig.width = 9,
                fig.height = 7)
 ```
@@ -399,7 +399,7 @@ p2 <- bdi %>%
          y = 'Proportion of participants') +
     scale_x_discrete(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    scale_fill_manual(values = c('#B2B2B2', '#323232')) +
+    scale_fill_manual(values = c('#56B4E9', '#E69F00')) +
     theme_bw(base_size = 26) +
     theme(legend.position = 'top',
           legend.title = element_blank(),
