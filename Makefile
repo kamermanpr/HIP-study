@@ -8,14 +8,11 @@ DATA = 	data-cleaned/bpi.csv data-cleaned/bpi.rds \
 	data-cleaned/eq5d.csv data-cleaned/eq5d.rds \
 	data-cleaned/se6.csv data-cleaned/se6.rds
 
-1S = 	outputs/supplement-01-summary-statistics.html \
-		outputs/supplement-01-summary-statistics.md
+1S = 	outputs/supplement-01-summary-statistics.pdf
 
-2S = 	outputs/supplement-02-completeness.html \
-		outputs/supplement-02-completeness.md
+2S = 	outputs/supplement-02-completeness.pdf
 
-3S = 	outputs/supplement-03-dropout-predictors.html \
-		outputs/supplement-03-dropout-predictors.md
+3S = 	outputs/supplement-03-dropout-predictors.pdf
 
 .PHONY: all
 
@@ -32,7 +29,7 @@ data-original/*.xlsx
 	Rscript "$<"
 
 # Generate html and md outputs
-outputs/supplement-01-summary-statistics.html outputs/supplement-01-summary-statistics.md: \
+outputs/supplement-01-summary-statistics.pdf: \
 supplement-01-summary-statistics.Rmd \
 data-cleaned/demographics.rds \
 data-cleaned/bpi.rds \
@@ -41,14 +38,14 @@ data-cleaned/eq5d.rds \
 data-cleaned/se6.rds
 	Rscript -e "rmarkdown::render('$<', output_dir = 'outputs/')"
 
-outputs/supplement-02-completeness.html outputs/supplement-02-completeness.md: \
+outputs/supplement-02-completeness.pdf: \
 supplement-02-completeness.Rmd \
 data-cleaned/demographics.rds \
 data-cleaned/bpi.rds
 	Rscript -e "rmarkdown::render('$<', output_dir = 'outputs/')"
 	mv figures/supplement-02-completeness outputs/figures/
 
-outputs/supplement-03-dropout-predictors.html outputs/supplement-03-dropout-predictors.md: \
+outputs/supplement-03-dropout-predictors.pdf: \
 supplement-03-dropout-predictors.Rmd \
 data-cleaned/demographics.rds \
 data-cleaned/bpi.rds \
