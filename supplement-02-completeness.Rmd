@@ -10,17 +10,18 @@ date: "Last updated: `r format(Sys.Date(), '%d %B %Y')`"
 library(tidyverse)
 library(magrittr)
 library(skimr)
+library(knitr)
 
 # Set ggplot2 theme
 theme_set(new = theme_bw(base_size = 14))
 
 # Set knitr options
-knitr::opts_chunk$set(warning = FALSE,
-                      message = FALSE,
-                      fig.align = 'center',
-                      fig.path = 'figures/supplement-02-completeness/',
-                      fig.width = 9,
-                      fig.height = 7)
+opts_chunk$set(warning = FALSE,
+               message = FALSE,
+               fig.align = 'center',
+               fig.path = 'figures/supplement-02-completeness/',
+               fig.width = 9,
+               fig.height = 7)
 ```
 
 ----
@@ -95,7 +96,7 @@ bpi %>%
     # Filter out pain interference
     filter(subscale != 'Pain_interference') %>% 
     # Tabulate
-    kable(caption = 'Tabular summary of data completeness across BPI items')
+    kable(., caption = 'Tabular summary of data completeness across BPI items')
 ```
 
 Although there are small variations in the number of missing data across BPI items, the first item on the BDI assesses whether the participant has pain at the time of completing the questionniare (`Pain_present`), and it will be used as a proxy of missing data across all other items. 
@@ -160,7 +161,8 @@ bpi %>%
                   label = paste0('(n = ', ..count.., ')')),
               vjust = 1.2) +
     labs(title = 'Completeness of data for the BPI at each study site',
-         subtitle = "Nominal sample size at each site is given in the 'Study_site' facet label",
+         subtitle = "Nominal sample size at each site is given in the 
+         'Study_site' facet label",
          x = 'Time (weeks)',
          y = 'Proportion of participants') +
     scale_fill_manual(values = c('#666666', '#CCCCCC')) +
@@ -419,12 +421,10 @@ bpi_spread %>%
            combos = str_replace_all(combos,
                                     pattern = '1',
                                     replacement = 'A')) %>% 
-    knitr::kable(.,
-                 caption = '',
-                 col.names = c('Attendance sequence', 
-                               'Lost to follow-up classification',
-                               'Number of participants'),
-                 align = 'rrr')
+    kable(., caption = 'Loss to follow-up classification by attendance sequence',
+          col.names = c('Attendance sequence', 
+                        'Lost to follow-up classification',
+                        'Number of participants'))
 
 # Drop columns
 bpi_time <- bpi_spread %>% 

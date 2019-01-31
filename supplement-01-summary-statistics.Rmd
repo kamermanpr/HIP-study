@@ -10,6 +10,7 @@ date: "Last updated: `r format(Sys.Date(), '%d %B %Y')`"
 library(tidyverse)
 library(magrittr)
 library(skimr)
+library(knitr)
 
 # Skimr options
 ## New factor function
@@ -34,9 +35,8 @@ skim_with(numeric = list(hist = NULL, p0 = NULL, p25 = NULL,
           factor = list(ordered = NULL, top_counts = ~ top_counts(.)))
 
 # Set knitr options
-knitr::opts_chunk$set(warning = FALSE,
-                      message = FALSE,
-                      fig.path = 'figures/supplement-01-summary-statistics/')
+opts_chunk$set(warning = FALSE,
+               message = FALSE)
 ```
 
 ----
@@ -246,9 +246,11 @@ se6 %<>%
 
 ----
 
-# Demographic data
+# Analysis
 
-## Continuous variables
+## Demographic data
+
+### Continuous variables
 
 ```{r demo_c}
 demo %>% 
@@ -262,17 +264,17 @@ demo %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 
 demo %>% 
     select(Sex, Age_years, Years_on_HAART, CD4_most_recent) %>% 
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
-## Factor variables
+### Factor variables
 
 ```{r demo_f}
 demo %>% 
@@ -286,24 +288,24 @@ demo %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrr')
+          align = 'lllrrrrr')
 
 demo %>% 
     select(Sex, Education, Employment, HAART, Sex, SOS_mnemonic) %>% 
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrr')
 ```
 
 ----
 
-# Brief Pain Inventory
+## Brief Pain Inventory
 
 - PSS: Pain severity
 - PIS: Pain interference
 
-## Continuous variables
+### Continuous variables
 
 ```{r bpi_c}
 bpi %>% 
@@ -317,21 +319,21 @@ bpi %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 
 bpi %>% 
     select(Sex, PIS, PSS) %>% 
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 ----
 
-# Beck's Depression Index
+## Beck's Depression Index
 
-## Continuous variables
+### Continuous variables
 
 ```{r bdi_c}
 bdi %>% 
@@ -345,21 +347,21 @@ bdi %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 
 bdi %>% 
     select(Sex, BDI) %>% 
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 ----
 
-# EQ5D (3L)
+## EQ5D (3L)
 
-## Continuous variables
+### Continuous variables
 
 ```{r eq5d_c}
 eq5d %>% 
@@ -373,21 +375,21 @@ eq5d %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 
 eq5d %>% 
     select(Sex, EQ5D_index, EQ5D_VAS) %>% 
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 ----
 
-# Self-efficacy Questionnaire 6
+## Self-efficacy Questionnaire 6
 
-## Continuous variables
+### Continuous variables
 
 ```{r se6_c}
 se6 %>% 
@@ -401,14 +403,14 @@ se6 %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 
 se6 %>% 
     select(Sex, SE6) %>% 
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 ----
