@@ -1,4 +1,4 @@
-# HIP study
+# HIV Pain (HIP) Intervention study
 
 ### Generate PDF copies of supplementary files 
 
