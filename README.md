@@ -12,7 +12,7 @@ This branch of the _HIP-study_ repo was used to generate PDF copies of the suppl
 
 URL for master: [https://github.com/kamermanpr/HIP-study](https://github.com/kamermanpr/HIP-study)
 
-URL for this branch: [https://github.com/kamermanpr/HIP-study/tree/pdfs_supplements](https://github.com/kamermanpr/HIP-study/tree/pdfs_supplements)
+URL for this branch: [https://github.com/kamermanpr/HIP-study/tree/pdf_supplements](https://github.com/kamermanpr/HIP-study/tree/pdf_supplements)
 
 ## Run the analysis scripts
 
