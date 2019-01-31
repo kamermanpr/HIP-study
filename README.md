@@ -1,4 +1,4 @@
-# HIP study
+# HIV Pain (HIP) Intervention Study
 
 ## Bibliometric information
 Parker R, Madden VJ, Devan D, Cameron S, Jackson K, Kamerman P, Reardon C, Wadley A. Barriers to implementing clinical trials on non-pharmacological treatments in developing countries – lessons learnt from addressing pain in HIV. _Pain Reports_ \[submitted 2019-01-31\]
