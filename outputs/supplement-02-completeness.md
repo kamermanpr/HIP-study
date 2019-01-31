@@ -2,7 +2,7 @@
 title: "Supplement 2"
 subtitle: "Data completeness"
 author: "Peter Kamerman"
-date: "Last updated: 30 January 2019"
+date: "Last updated: 31 January 2019"
 ---
 
 
@@ -81,43 +81,45 @@ bpi %>%
     # Filter out pain interference
     filter(subscale != 'Pain_interference') %>% 
     # Tabulate
-    kable(caption = 'Tabular summary of data completeness across BPI items')
+    kable(., caption = 'Tabular summary of data completeness across BPI items')
 ```
 
 
 
-   variable      time       subscale       missing    complete     n  
---------------  ------  ----------------  ---------  ----------  -----
- Pain_present     BL      Pain_present       16         144       160 
- Average_pain     BL     Pain_intensity      51         109       160 
-  Least_pain      BL     Pain_intensity      16         144       160 
-   Pain_now       BL     Pain_intensity      16         144       160 
-  Worst_pain      BL     Pain_intensity      16         144       160 
- Pain_present    Wk4      Pain_present       57         103       160 
- Average_pain    Wk4     Pain_intensity      89          71       160 
-  Least_pain     Wk4     Pain_intensity      58         102       160 
-   Pain_now      Wk4     Pain_intensity      57         103       160 
-  Worst_pain     Wk4     Pain_intensity      57         103       160 
- Pain_present    Wk8      Pain_present       58         102       160 
- Average_pain    Wk8     Pain_intensity      91          69       160 
-  Least_pain     Wk8     Pain_intensity      58         102       160 
-   Pain_now      Wk8     Pain_intensity      58         102       160 
-  Worst_pain     Wk8     Pain_intensity      59         101       160 
- Pain_present    Wk12     Pain_present       79          81       160 
- Average_pain    Wk12    Pain_intensity      94          66       160 
-  Least_pain     Wk12    Pain_intensity      79          81       160 
-   Pain_now      Wk12    Pain_intensity      79          81       160 
-  Worst_pain     Wk12    Pain_intensity      79          81       160 
- Pain_present    Wk24     Pain_present       73          87       160 
- Average_pain    Wk24    Pain_intensity      104         56       160 
-  Least_pain     Wk24    Pain_intensity      73          87       160 
-   Pain_now      Wk24    Pain_intensity      73          87       160 
-  Worst_pain     Wk24    Pain_intensity      73          87       160 
- Pain_present    Wk48     Pain_present       82          78       160 
- Average_pain    Wk48    Pain_intensity      114         46       160 
-  Least_pain     Wk48    Pain_intensity      82          78       160 
-   Pain_now      Wk48    Pain_intensity      82          78       160 
-  Worst_pain     Wk48    Pain_intensity      82          78       160 
+Table: Tabular summary of data completeness across BPI items
+
+variable       time   subscale         missing   complete   n   
+-------------  -----  ---------------  --------  ---------  ----
+Pain_present   BL     Pain_present     16        144        160 
+Average_pain   BL     Pain_intensity   51        109        160 
+Least_pain     BL     Pain_intensity   16        144        160 
+Pain_now       BL     Pain_intensity   16        144        160 
+Worst_pain     BL     Pain_intensity   16        144        160 
+Pain_present   Wk4    Pain_present     57        103        160 
+Average_pain   Wk4    Pain_intensity   89        71         160 
+Least_pain     Wk4    Pain_intensity   58        102        160 
+Pain_now       Wk4    Pain_intensity   57        103        160 
+Worst_pain     Wk4    Pain_intensity   57        103        160 
+Pain_present   Wk8    Pain_present     58        102        160 
+Average_pain   Wk8    Pain_intensity   91        69         160 
+Least_pain     Wk8    Pain_intensity   58        102        160 
+Pain_now       Wk8    Pain_intensity   58        102        160 
+Worst_pain     Wk8    Pain_intensity   59        101        160 
+Pain_present   Wk12   Pain_present     79        81         160 
+Average_pain   Wk12   Pain_intensity   94        66         160 
+Least_pain     Wk12   Pain_intensity   79        81         160 
+Pain_now       Wk12   Pain_intensity   79        81         160 
+Worst_pain     Wk12   Pain_intensity   79        81         160 
+Pain_present   Wk24   Pain_present     73        87         160 
+Average_pain   Wk24   Pain_intensity   104       56         160 
+Least_pain     Wk24   Pain_intensity   73        87         160 
+Pain_now       Wk24   Pain_intensity   73        87         160 
+Worst_pain     Wk24   Pain_intensity   73        87         160 
+Pain_present   Wk48   Pain_present     82        78         160 
+Average_pain   Wk48   Pain_intensity   114       46         160 
+Least_pain     Wk48   Pain_intensity   82        78         160 
+Pain_now       Wk48   Pain_intensity   82        78         160 
+Worst_pain     Wk48   Pain_intensity   82        78         160 
 
 Although there are small variations in the number of missing data across BPI items, the first item on the BDI assesses whether the participant has pain at the time of completing the questionniare (`Pain_present`), and it will be used as a proxy of missing data across all other items. 
 
@@ -183,7 +185,8 @@ bpi %>%
                   label = paste0('(n = ', ..count.., ')')),
               vjust = 1.2) +
     labs(title = 'Completeness of data for the BPI at each study site',
-         subtitle = "Nominal sample size at each site is given in the 'Study_site' facet label",
+         subtitle = "Nominal sample size at each site is given in the 
+         'Study_site' facet label",
          x = 'Time (weeks)',
          y = 'Proportion of participants') +
     scale_fill_manual(values = c('#666666', '#CCCCCC')) +
@@ -495,54 +498,52 @@ bpi_spread %>%
            combos = str_replace_all(combos,
                                     pattern = '1',
                                     replacement = 'A')) %>% 
-    knitr::kable(.,
-                 caption = '',
-                 col.names = c('Attendance sequence', 
-                               'Lost to follow-up classification',
-                               'Number of participants'),
-                 align = 'rrr')
+    kable(., caption = 'Loss to follow-up classification by attendance sequence',
+          col.names = c('Attendance sequence', 
+                        'Lost to follow-up classification',
+                        'Number of participants'))
 ```
 
 
 
-Table: 
+Table: Loss to follow-up classification by attendance sequence
 
- Attendance sequence   Lost to follow-up classification   Number of participants
+Attendance sequence   Lost to follow-up classification    Number of participants
 --------------------  ---------------------------------  -----------------------
-         _ _ _ _ _ _                                -T0                        8
-         _ _ _ _ _ A                                -T0                        1
-         _ _ _ _ A _                                -T0                        1
-         _ _ _ _ A A                                -T0                        1
-         _ A _ A A A                                -T0                        1
-         A _ _ _ _ _                                 T0                       22
-         A _ _ A _ _                                 T0                        2
-         A _ _ _ _ A                                 T0                        1
-         A _ _ A A A                                 T0                        1
-         A A _ _ _ _                                 T4                        5
-         A A _ _ _ A                                 T4                        4
-         A A _ A _ _                                 T4                        4
-         A A _ A A _                                 T4                        4
-         A A _ _ A _                                 T4                        1
-         A A _ _ A A                                 T4                        1
-         A A _ A _ A                                 T4                        1
-         A A A _ _ _                                 T8                        5
-         A _ A _ _ _                                 T8                        2
-         A A A A _ _                                T12                        7
-         _ A A A _ _                                T12                        1
-         A A A A A _                                T24                       12
-         A _ A A A _                                T24                        4
-         A A A _ A _                                T24                        3
-         _ A A A A _                                T24                        1
-         A A A A A A                                T48                       32
-         A A A _ A A                                T48                       14
-         A _ A _ A A                                T48                        5
-         A _ A A A A                                T48                        4
-         A A A A _ A                                T48                        4
-         A _ A _ _ A                                T48                        3
-         A _ A A _ A                                T48                        2
-         _ A A _ A A                                T48                        1
-         _ A A A A A                                T48                        1
-         A A A _ _ A                                T48                        1
+_ _ _ _ _ _           -T0                                                      8
+_ _ _ _ _ A           -T0                                                      1
+_ _ _ _ A _           -T0                                                      1
+_ _ _ _ A A           -T0                                                      1
+_ A _ A A A           -T0                                                      1
+A _ _ _ _ _           T0                                                      22
+A _ _ A _ _           T0                                                       2
+A _ _ _ _ A           T0                                                       1
+A _ _ A A A           T0                                                       1
+A A _ _ _ _           T4                                                       5
+A A _ _ _ A           T4                                                       4
+A A _ A _ _           T4                                                       4
+A A _ A A _           T4                                                       4
+A A _ _ A _           T4                                                       1
+A A _ _ A A           T4                                                       1
+A A _ A _ A           T4                                                       1
+A A A _ _ _           T8                                                       5
+A _ A _ _ _           T8                                                       2
+A A A A _ _           T12                                                      7
+_ A A A _ _           T12                                                      1
+A A A A A _           T24                                                     12
+A _ A A A _           T24                                                      4
+A A A _ A _           T24                                                      3
+_ A A A A _           T24                                                      1
+A A A A A A           T48                                                     32
+A A A _ A A           T48                                                     14
+A _ A _ A A           T48                                                      5
+A _ A A A A           T48                                                      4
+A A A A _ A           T48                                                      4
+A _ A _ _ A           T48                                                      3
+A _ A A _ A           T48                                                      2
+_ A A _ A A           T48                                                      1
+_ A A A A A           T48                                                      1
+A A A _ _ A           T48                                                      1
 
 ```r
 # Drop columns
@@ -700,9 +701,10 @@ ggsave(filename = 'figures/figure-1_greyscale.pdf',
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] bindrcpp_0.2.2  skimr_1.0.4     magrittr_1.5    forcats_0.3.0  
-##  [5] stringr_1.3.1   dplyr_0.7.8     purrr_0.3.0     readr_1.3.1    
-##  [9] tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0   tidyverse_1.2.1
+##  [1] bindrcpp_0.2.2  knitr_1.21      skimr_1.0.4     magrittr_1.5   
+##  [5] forcats_0.3.0   stringr_1.3.1   dplyr_0.7.8     purrr_0.3.0    
+##  [9] readr_1.3.1     tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0  
+## [13] tidyverse_1.2.1
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] tidyselect_0.2.5 xfun_0.4         reshape2_1.4.3   haven_2.0.0     
@@ -710,11 +712,11 @@ ggsave(filename = 'figures/figure-1_greyscale.pdf',
 ##  [9] yaml_2.2.0       rlang_0.3.1      pillar_1.3.1     glue_1.3.0      
 ## [13] withr_2.1.2.9000 modelr_0.1.2     readxl_1.2.0     bindr_0.1.1     
 ## [17] plyr_1.8.4       munsell_0.5.0    gtable_0.2.0     cellranger_1.1.0
-## [21] rvest_0.3.2      evaluate_0.12    labeling_0.3     knitr_1.21      
-## [25] highr_0.7        broom_0.5.1      Rcpp_1.0.0       scales_1.0.0    
-## [29] backports_1.1.3  jsonlite_1.6     hms_0.4.2        digest_0.6.18   
-## [33] stringi_1.2.4    grid_3.5.2       cli_1.0.1        tools_3.5.2     
-## [37] lazyeval_0.2.1   crayon_1.3.4     pkgconfig_2.0.2  xml2_1.2.0      
-## [41] lubridate_1.7.4  assertthat_0.2.0 rmarkdown_1.11   httr_1.4.0      
-## [45] rstudioapi_0.9.0 R6_2.3.0         nlme_3.1-137     compiler_3.5.2
+## [21] rvest_0.3.2      evaluate_0.12    labeling_0.3     highr_0.7       
+## [25] broom_0.5.1      Rcpp_1.0.0       scales_1.0.0     backports_1.1.3 
+## [29] jsonlite_1.6     hms_0.4.2        digest_0.6.18    stringi_1.2.4   
+## [33] grid_3.5.2       cli_1.0.1        tools_3.5.2      lazyeval_0.2.1  
+## [37] crayon_1.3.4     pkgconfig_2.0.2  xml2_1.2.0       lubridate_1.7.4 
+## [41] assertthat_0.2.0 rmarkdown_1.11   httr_1.4.0       rstudioapi_0.9.0
+## [45] R6_2.3.0         nlme_3.1-137     compiler_3.5.2
 ```

@@ -2,7 +2,7 @@
 title: "Supplement 1"
 subtitle: "Summary statistics for baseline variables"
 author: "Peter Kamerman and Tory Madden"
-date: "Last updated: 30 January 2019"
+date: "Last updated: 31 January 2019"
 ---
 
 
@@ -220,9 +220,11 @@ se6 %<>%
 
 ----
 
-# Demographic data
+# Analysis
 
-## Continuous variables
+## Demographic data
+
+### Continuous variables
 
 
 ```r
@@ -235,11 +237,13 @@ demo %>%
 
 
 
-  type         variable        missing    complete     n      mean       sd      median     q25      q75     min     max  
----------  -----------------  ---------  ----------  -----  --------  --------  --------  --------  ------  ------  ------
- numeric       Age_years          0         160       160    35.23      5.65       35        32       38      18      58  
- numeric    CD4_most_recent       8         152       160    406.45    249.51     376      224.75    547      3      1189 
- numeric    Years_on_HAART       78          82       160     3.56      2.83       3         1       5.06    0.25     13  
+Table: Whole cohort
+
+type      variable           missing   complete     n     mean       sd   median      q25    q75    min    max
+--------  ----------------  --------  ---------  ----  -------  -------  -------  -------  -----  -----  -----
+numeric   Age_years                0        160   160    35.23     5.65       35       32     38     18     58
+numeric   CD4_most_recent          8        152   160   406.45   249.51      376   224.75    547      3   1189
+numeric   Years_on_HAART          78         82   160     3.56     2.83        3        1   5.06   0.25     13
 
 ```r
 demo %>% 
@@ -247,25 +251,27 @@ demo %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type      Study_site       variable        missing    complete    n      mean       sd      median     q25      q75     min     max  
----------  ------------  -----------------  ---------  ----------  ----  --------  --------  --------  -------  -------  ------  ------
- numeric        R1           Age_years          0          47       47    35.28      2.99       36       33       38       28      40  
- numeric        R1        CD4_most_recent       0          47       47    415.43    195.84     397      277.5     538     114     1180 
- numeric        R1        Years_on_HAART       29          18       47     3.92      2.05      4.17     2.31     5.46     0.67    8.3  
- numeric        R2           Age_years          0          49       49     32.9      4.63       35       30       36       18      40  
- numeric        R2        CD4_most_recent       2          47       49    450.53    241.69     407      268.5    562.5     36     1120 
- numeric        R2        Years_on_HAART        2          47       49     3.97      3.25       3         1        6      0.25     13  
- numeric        U1           Age_years          0          47       47    39.34      6.27       38       35      43.5      27      58  
- numeric        U1        CD4_most_recent       6          41       47    302.73    284.63     206       113      368      3      1189 
- numeric        U1        Years_on_HAART       47          0        47     NaN        NA        NA       NA       NA      Inf     -Inf 
- numeric        U2           Age_years          0          17       17    30.41      4.77       30       26       34       23      37  
- numeric        U2        CD4_most_recent       0          17       17    509.94    248.8      471       414      648     119     1097 
- numeric        U2        Years_on_HAART        0          17       17     2.07      1.69       1       0.67     3.42     0.33    5.25 
+Table: By study site
+
+type      Study_site   variable           missing   complete    n     mean       sd   median     q25     q75    min    max
+--------  -----------  ----------------  --------  ---------  ---  -------  -------  -------  ------  ------  -----  -----
+numeric   R1           Age_years                0         47   47    35.28     2.99       36      33      38     28     40
+numeric   R1           CD4_most_recent          0         47   47   415.43   195.84      397   277.5     538    114   1180
+numeric   R1           Years_on_HAART          29         18   47     3.92     2.05     4.17    2.31    5.46   0.67    8.3
+numeric   R2           Age_years                0         49   49     32.9     4.63       35      30      36     18     40
+numeric   R2           CD4_most_recent          2         47   49   450.53   241.69      407   268.5   562.5     36   1120
+numeric   R2           Years_on_HAART           2         47   49     3.97     3.25        3       1       6   0.25     13
+numeric   U1           Age_years                0         47   47    39.34     6.27       38      35    43.5     27     58
+numeric   U1           CD4_most_recent          6         41   47   302.73   284.63      206     113     368      3   1189
+numeric   U1           Years_on_HAART          47          0   47      NaN       NA       NA      NA      NA    Inf   -Inf
+numeric   U2           Age_years                0         17   17    30.41     4.77       30      26      34     23     37
+numeric   U2           CD4_most_recent          0         17   17   509.94    248.8      471     414     648    119   1097
+numeric   U2           Years_on_HAART           0         17   17     2.07     1.69        1    0.67    3.42   0.33   5.25
 
 ```r
 demo %>% 
@@ -273,21 +279,23 @@ demo %>%
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type       Sex         variable        missing    complete    n      mean       sd      median     q25       q75      min     max  
----------  --------  -----------------  ---------  ----------  ----  --------  --------  --------  --------  --------  ------  ------
- numeric    female       Age_years          0          97       97    34.23      5.97       35        30        37       18      58  
- numeric    female    CD4_most_recent       5          92       97    433.73    273.51    410.5     244.75    570.5      3      1189 
- numeric    female    Years_on_HAART       33          64       97     3.46      3.03       3        0.96       5       0.25     13  
- numeric     male        Age_years          0          63       63    36.76      4.76       36       33.5       39       27      50  
- numeric     male     CD4_most_recent       3          60       63    364.63    202.5      335      210.5     491.75     30     1180 
- numeric     male     Years_on_HAART       45          18       63     3.92      2.05      4.17      2.31      5.46     0.67    8.3  
+Table: By sex
 
-## Factor variables
+type      Sex      variable           missing   complete    n     mean       sd   median      q25      q75    min    max
+--------  -------  ----------------  --------  ---------  ---  -------  -------  -------  -------  -------  -----  -----
+numeric   female   Age_years                0         97   97    34.23     5.97       35       30       37     18     58
+numeric   female   CD4_most_recent          5         92   97   433.73   273.51    410.5   244.75    570.5      3   1189
+numeric   female   Years_on_HAART          33         64   97     3.46     3.03        3     0.96        5   0.25     13
+numeric   male     Age_years                0         63   63    36.76     4.76       36     33.5       39     27     50
+numeric   male     CD4_most_recent          3         60   63   364.63    202.5      335    210.5   491.75     30   1180
+numeric   male     Years_on_HAART          45         18   63     3.92     2.05     4.17     2.31     5.46   0.67    8.3
+
+### Factor variables
 
 
 ```r
@@ -300,13 +308,15 @@ demo %>%
 
 
 
-  type       variable      missing    complete     n     n_unique               top_counts            
---------  --------------  ---------  ----------  -----  ----------  ----------------------------------
- factor     Education         2         158       160       3           8-1: 112, 0-7: 44, Mor: 2     
- factor     Employment        3         157       160       4        une: 96, emp: 51, una: 8, stu: 2 
- factor       HAART           4         156       160       3           fir: 115, sec: 36, no : 5     
- factor        Sex            0         160       160       2                fem: 97, mal: 63         
- factor    SOS_mnemonic      47         113       160       2                low: 78, hea: 35         
+Table: Whole cohort
+
+type     variable        missing   complete     n   n_unique                         top_counts
+-------  -------------  --------  ---------  ----  ---------  ---------------------------------
+factor   Education             2        158   160          3          8-1: 112, 0-7: 44, Mor: 2
+factor   Employment            3        157   160          4   une: 96, emp: 51, una: 8, stu: 2
+factor   HAART                 4        156   160          3          fir: 115, sec: 36, no : 5
+factor   Sex                   0        160   160          2                   fem: 97, mal: 63
+factor   SOS_mnemonic         47        113   160          2                   low: 78, hea: 35
 
 ```r
 demo %>% 
@@ -314,33 +324,35 @@ demo %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrr')
+          align = 'lllrrrrr')
 ```
 
 
 
-  type     Study_site      variable      missing    complete    n     n_unique               top_counts            
---------  ------------  --------------  ---------  ----------  ----  ----------  ----------------------------------
- factor        R1         Education         0          47       47       2            8-1: 30, 0-7: 17, Mor: 0     
- factor        R1         Employment        2          45       47       3        emp: 21, une: 20, una: 4, stu: 0 
- factor        R1           HAART           0          47       47       2            fir: 43, sec: 4, no : 0      
- factor        R1            Sex            0          47       47       1                mal: 47, fem: 0          
- factor        R1        SOS_mnemonic       0          47       47       2                hea: 28, low: 19         
- factor        R2         Education         0          49       49       2            8-1: 30, 0-7: 19, Mor: 0     
- factor        R2         Employment        0          49       49       3        une: 40, emp: 8, una: 1, stu: 0  
- factor        R2           HAART           0          49       49       3            fir: 40, sec: 5, no : 4      
- factor        R2            Sex            0          49       49       1                fem: 49, mal: 0          
- factor        R2        SOS_mnemonic       0          49       49       1                low: 49, hea: 0          
- factor        U1         Education         2          45       47       3            8-1: 41, 0-7: 2, Mor: 2      
- factor        U1         Employment        1          46       47       4        une: 25, emp: 19, stu: 1, una: 1 
- factor        U1           HAART           4          43       47       3            sec: 24, fir: 18, no : 1     
- factor        U1            Sex            0          47       47       2                fem: 31, mal: 16         
- factor        U1        SOS_mnemonic      47          0        47       0                 hea: 0, low: 0          
- factor        U2         Education         0          17       17       2            8-1: 11, 0-7: 6, Mor: 0      
- factor        U2         Employment        0          17       17       4        une: 11, emp: 3, una: 2, stu: 1  
- factor        U2           HAART           0          17       17       2            fir: 14, sec: 3, no : 0      
- factor        U2            Sex            0          17       17       1                fem: 17, mal: 0          
- factor        U2        SOS_mnemonic       0          17       17       2                low: 10, hea: 7          
+Table: By study site
+
+type     Study_site   variable        missing   complete    n   n_unique                         top_counts
+-------  -----------  -------------  --------  ---------  ---  ---------  ---------------------------------
+factor   R1           Education             0         47   47          2           8-1: 30, 0-7: 17, Mor: 0
+factor   R1           Employment            2         45   47          3   emp: 21, une: 20, una: 4, stu: 0
+factor   R1           HAART                 0         47   47          2            fir: 43, sec: 4, no : 0
+factor   R1           Sex                   0         47   47          1                    mal: 47, fem: 0
+factor   R1           SOS_mnemonic          0         47   47          2                   hea: 28, low: 19
+factor   R2           Education             0         49   49          2           8-1: 30, 0-7: 19, Mor: 0
+factor   R2           Employment            0         49   49          3    une: 40, emp: 8, una: 1, stu: 0
+factor   R2           HAART                 0         49   49          3            fir: 40, sec: 5, no : 4
+factor   R2           Sex                   0         49   49          1                    fem: 49, mal: 0
+factor   R2           SOS_mnemonic          0         49   49          1                    low: 49, hea: 0
+factor   U1           Education             2         45   47          3            8-1: 41, 0-7: 2, Mor: 2
+factor   U1           Employment            1         46   47          4   une: 25, emp: 19, stu: 1, una: 1
+factor   U1           HAART                 4         43   47          3           sec: 24, fir: 18, no : 1
+factor   U1           Sex                   0         47   47          2                   fem: 31, mal: 16
+factor   U1           SOS_mnemonic         47          0   47          0                     hea: 0, low: 0
+factor   U2           Education             0         17   17          2            8-1: 11, 0-7: 6, Mor: 0
+factor   U2           Employment            0         17   17          4    une: 11, emp: 3, una: 2, stu: 1
+factor   U2           HAART                 0         17   17          2            fir: 14, sec: 3, no : 0
+factor   U2           Sex                   0         17   17          1                    fem: 17, mal: 0
+factor   U2           SOS_mnemonic          0         17   17          2                    low: 10, hea: 7
 
 ```r
 demo %>% 
@@ -348,30 +360,32 @@ demo %>%
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrr')
 ```
 
 
 
-  type      Sex        variable      missing    complete    n     n_unique               top_counts            
---------  --------  --------------  ---------  ----------  ----  ----------  ----------------------------------
- factor    female     Education         1          96       97       3            8-1: 68, 0-7: 26, Mor: 2     
- factor    female     Employment        1          96       97       4        une: 65, emp: 26, una: 3, stu: 2 
- factor    female       HAART           3          94       97       3            fir: 65, sec: 24, no : 5     
- factor    female    SOS_mnemonic      31          66       97       2                low: 59, hea: 7          
- factor     male      Education         1          62       63       2            8-1: 44, 0-7: 18, Mor: 0     
- factor     male      Employment        2          61       63       3        une: 31, emp: 25, una: 5, stu: 0 
- factor     male        HAART           1          62       63       2            fir: 50, sec: 12, no : 0     
- factor     male     SOS_mnemonic      16          47       63       2                hea: 28, low: 19         
+Table: By sex
+
+type     Sex      variable        missing   complete    n   n_unique                         top_counts
+-------  -------  -------------  --------  ---------  ---  ---------  ---------------------------------
+factor   female   Education             1         96   97          3           8-1: 68, 0-7: 26, Mor: 2
+factor   female   Employment            1         96   97          4   une: 65, emp: 26, una: 3, stu: 2
+factor   female   HAART                 3         94   97          3           fir: 65, sec: 24, no : 5
+factor   female   SOS_mnemonic         31         66   97          2                    low: 59, hea: 7
+factor   male     Education             1         62   63          2           8-1: 44, 0-7: 18, Mor: 0
+factor   male     Employment            2         61   63          3   une: 31, emp: 25, una: 5, stu: 0
+factor   male     HAART                 1         62   63          2           fir: 50, sec: 12, no : 0
+factor   male     SOS_mnemonic         16         47   63          2                   hea: 28, low: 19
 
 ----
 
-# Brief Pain Inventory
+## Brief Pain Inventory
 
 - PSS: Pain severity
 - PIS: Pain interference
 
-## Continuous variables
+### Continuous variables
 
 
 ```r
@@ -384,10 +398,12 @@ bpi %>%
 
 
 
-  type      variable    missing    complete     n     mean     sd     median    q25    q75    min    max 
----------  ----------  ---------  ----------  -----  ------  ------  --------  -----  -----  -----  -----
- numeric      PIS         17         143       160    5.12    2.58      5        3      7      0     10  
- numeric      PSS         16         144       160    5.03    2.14      5        4      6      0     10  
+Table: Whole cohort
+
+type      variable    missing   complete     n   mean     sd   median   q25   q75   min   max
+--------  ---------  --------  ---------  ----  -----  -----  -------  ----  ----  ----  ----
+numeric   PIS              17        143   160   5.12   2.58        5     3     7     0    10
+numeric   PSS              16        144   160   5.03   2.14        5     4     6     0    10
 
 ```r
 bpi %>% 
@@ -395,21 +411,23 @@ bpi %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type      Study_site    variable    missing    complete    n     mean     sd     median    q25    q75     min    max 
----------  ------------  ----------  ---------  ----------  ----  ------  ------  --------  -----  ------  -----  -----
- numeric        R1          PIS         12          35       47    4.69    3.19      5       1.5     7       0      9  
- numeric        R1          PSS         12          35       47     5      3.01      5        3      8       0     10  
- numeric        R2          PIS          1          48       49    4.79    2.25      5        3     6.25     0     10  
- numeric        R2          PSS          0          49       49    4.61    1.74      5        4      6       2     10  
- numeric        U1          PIS          4          43       47    5.12    2.31      5       3.5     7       0      9  
- numeric        U1          PSS          4          43       47     5      1.6       5        4      6       0      8  
- numeric        U2          PIS          0          17       17    6.94    2.05      7        6      9       3     10  
- numeric        U2          PSS          0          17       17    6.41    1.84      6        6      7       3     10  
+Table: By study site
+
+type      Study_site   variable    missing   complete    n   mean     sd   median   q25    q75   min   max
+--------  -----------  ---------  --------  ---------  ---  -----  -----  -------  ----  -----  ----  ----
+numeric   R1           PIS              12         35   47   4.69   3.19        5   1.5      7     0     9
+numeric   R1           PSS              12         35   47      5   3.01        5     3      8     0    10
+numeric   R2           PIS               1         48   49   4.79   2.25        5     3   6.25     0    10
+numeric   R2           PSS               0         49   49   4.61   1.74        5     4      6     2    10
+numeric   U1           PIS               4         43   47   5.12   2.31        5   3.5      7     0     9
+numeric   U1           PSS               4         43   47      5    1.6        5     4      6     0     8
+numeric   U2           PIS               0         17   17   6.94   2.05        7     6      9     3    10
+numeric   U2           PSS               0         17   17   6.41   1.84        6     6      7     3    10
 
 ```r
 bpi %>% 
@@ -417,23 +435,25 @@ bpi %>%
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type       Sex      variable    missing    complete    n     mean     sd     median    q25    q75    min    max 
----------  --------  ----------  ---------  ----------  ----  ------  ------  --------  -----  -----  -----  -----
- numeric    female      PIS          5          92       97    5.32    2.39      5        4      7      0     10  
- numeric    female      PSS          4          93       97    5.05    1.89      5        4      6      0     10  
- numeric     male       PIS         12          51       63    4.76    2.88      5        2      7      0      9  
- numeric     male       PSS         12          51       63     5      2.56      5        4      6      0     10  
+Table: By sex
+
+type      Sex      variable    missing   complete    n   mean     sd   median   q25   q75   min   max
+--------  -------  ---------  --------  ---------  ---  -----  -----  -------  ----  ----  ----  ----
+numeric   female   PIS               5         92   97   5.32   2.39        5     4     7     0    10
+numeric   female   PSS               4         93   97   5.05   1.89        5     4     6     0    10
+numeric   male     PIS              12         51   63   4.76   2.88        5     2     7     0     9
+numeric   male     PSS              12         51   63      5   2.56        5     4     6     0    10
 
 ----
 
-# Beck's Depression Index
+## Beck's Depression Index
 
-## Continuous variables
+### Continuous variables
 
 
 ```r
@@ -446,9 +466,11 @@ bdi %>%
 
 
 
-  type      variable    missing    complete     n     mean      sd      median    q25    q75    min    max 
----------  ----------  ---------  ----------  -----  -------  -------  --------  -----  -----  -----  -----
- numeric      BDI          0         160       160    20.07    13.22     18.5     10     29      0     55  
+Table: Whole cohort
+
+type      variable    missing   complete     n    mean      sd   median   q25   q75   min   max
+--------  ---------  --------  ---------  ----  ------  ------  -------  ----  ----  ----  ----
+numeric   BDI               0        160   160   20.07   13.22     18.5    10    29     0    55
 
 ```r
 bdi %>% 
@@ -456,17 +478,19 @@ bdi %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type      Study_site    variable    missing    complete    n     mean      sd      median    q25    q75     min    max 
----------  ------------  ----------  ---------  ----------  ----  -------  -------  --------  -----  ------  -----  -----
- numeric        R1          BDI          0          47       47    13.47    12.1       13       0     21.5     0     45  
- numeric        R2          BDI          0          49       49    25.73    11.12      27      17      33      5     49  
- numeric        U1          BDI          0          47       47    17.51    12.39      16       8     25.5     0     46  
- numeric        U2          BDI          0          17       17    29.06    13.15      31      22      35      0     55  
+Table: By study site
+
+type      Study_site   variable    missing   complete    n    mean      sd   median   q25    q75   min   max
+--------  -----------  ---------  --------  ---------  ---  ------  ------  -------  ----  -----  ----  ----
+numeric   R1           BDI               0         47   47   13.47    12.1       13     0   21.5     0    45
+numeric   R2           BDI               0         49   49   25.73   11.12       27    17     33     5    49
+numeric   U1           BDI               0         47   47   17.51   12.39       16     8   25.5     0    46
+numeric   U2           BDI               0         17   17   29.06   13.15       31    22     35     0    55
 
 ```r
 bdi %>% 
@@ -474,21 +498,23 @@ bdi %>%
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type       Sex      variable    missing    complete    n     mean      sd      median    q25    q75    min    max 
----------  --------  ----------  ---------  ----------  ----  -------  -------  --------  -----  -----  -----  -----
- numeric    female      BDI          0          97       97    24.26    12.65      25      16     33      0     55  
- numeric     male       BDI          0          63       63    13.62    11.44      13       4     20      0     45  
+Table: By sex
+
+type      Sex      variable    missing   complete    n    mean      sd   median   q25   q75   min   max
+--------  -------  ---------  --------  ---------  ---  ------  ------  -------  ----  ----  ----  ----
+numeric   female   BDI               0         97   97   24.26   12.65       25    16    33     0    55
+numeric   male     BDI               0         63   63   13.62   11.44       13     4    20     0    45
 
 ----
 
-# EQ5D (3L)
+## EQ5D (3L)
 
-## Continuous variables
+### Continuous variables
 
 
 ```r
@@ -501,10 +527,12 @@ eq5d %>%
 
 
 
-  type       variable     missing    complete     n     mean      sd      median    q25      q75      min     max 
----------  ------------  ---------  ----------  -----  -------  -------  --------  ------  -------  -------  -----
- numeric    EQ5D_index      18         142       160    0.62     0.19      0.69     0.49    0.76     -0.21     1  
- numeric     EQ5D_VAS       16         144       160    59.52    21.17      60       50     76.25      0      100 
+Table: Whole cohort
+
+type      variable      missing   complete     n    mean      sd   median    q25     q75     min   max
+--------  -----------  --------  ---------  ----  ------  ------  -------  -----  ------  ------  ----
+numeric   EQ5D_index         18        142   160    0.62    0.19     0.69   0.49    0.76   -0.21     1
+numeric   EQ5D_VAS           16        144   160   59.52   21.17       60     50   76.25       0   100
 
 ```r
 eq5d %>% 
@@ -512,21 +540,23 @@ eq5d %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type      Study_site     variable     missing    complete    n     mean      sd      median    q25     q75      min     max  
----------  ------------  ------------  ---------  ----------  ----  -------  -------  --------  ------  ------  -------  ------
- numeric        R1        EQ5D_index      12          35       47    0.67     0.21      0.73     0.66    0.78    -0.21     1   
- numeric        R1         EQ5D_VAS       12          35       47    62.46    23.1       69       50      80      10      100  
- numeric        R2        EQ5D_index       0          49       49    0.66     0.18      0.73     0.62    0.8     -0.05    0.8  
- numeric        R2         EQ5D_VAS        0          49       49    59.9     16.6       60       50      70      20       90  
- numeric        U1        EQ5D_index       6          41       47    0.56     0.17      0.5      0.43    0.73    0.36      1   
- numeric        U1         EQ5D_VAS        4          43       47    59.77    20.64      60       55      75       0       90  
- numeric        U2        EQ5D_index       0          17       17    0.53     0.22      0.52     0.46    0.66    0.008    0.85 
- numeric        U2         EQ5D_VAS        0          17       17    51.76    29.04      60       40      75       0       80  
+Table: By study site
+
+type      Study_site   variable      missing   complete    n    mean      sd   median    q25    q75     min    max
+--------  -----------  -----------  --------  ---------  ---  ------  ------  -------  -----  -----  ------  -----
+numeric   R1           EQ5D_index         12         35   47    0.67    0.21     0.73   0.66   0.78   -0.21      1
+numeric   R1           EQ5D_VAS           12         35   47   62.46    23.1       69     50     80      10    100
+numeric   R2           EQ5D_index          0         49   49    0.66    0.18     0.73   0.62    0.8   -0.05    0.8
+numeric   R2           EQ5D_VAS            0         49   49    59.9    16.6       60     50     70      20     90
+numeric   U1           EQ5D_index          6         41   47    0.56    0.17      0.5   0.43   0.73    0.36      1
+numeric   U1           EQ5D_VAS            4         43   47   59.77   20.64       60     55     75       0     90
+numeric   U2           EQ5D_index          0         17   17    0.53    0.22     0.52   0.46   0.66   0.008   0.85
+numeric   U2           EQ5D_VAS            0         17   17   51.76   29.04       60     40     75       0     80
 
 ```r
 eq5d %>% 
@@ -534,23 +564,25 @@ eq5d %>%
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type       Sex       variable     missing    complete    n     mean      sd      median    q25     q75      min     max 
----------  --------  ------------  ---------  ----------  ----  -------  -------  --------  ------  ------  -------  -----
- numeric    female    EQ5D_index       5          92       97    0.61     0.19      0.66     0.47    0.76    -0.05     1  
- numeric    female     EQ5D_VAS        4          93       97    58.12    21.02      60       50      75       0      90  
- numeric     male     EQ5D_index      13          50       63    0.64      0.2      0.73     0.51    0.76    -0.21     1  
- numeric     male      EQ5D_VAS       12          51       63    62.08    21.42      70       50      80      10      100 
+Table: By sex
+
+type      Sex      variable      missing   complete    n    mean      sd   median    q25    q75     min   max
+--------  -------  -----------  --------  ---------  ---  ------  ------  -------  -----  -----  ------  ----
+numeric   female   EQ5D_index          5         92   97    0.61    0.19     0.66   0.47   0.76   -0.05     1
+numeric   female   EQ5D_VAS            4         93   97   58.12   21.02       60     50     75       0    90
+numeric   male     EQ5D_index         13         50   63    0.64     0.2     0.73   0.51   0.76   -0.21     1
+numeric   male     EQ5D_VAS           12         51   63   62.08   21.42       70     50     80      10   100
 
 ----
 
-# Self-efficacy Questionnaire 6
+## Self-efficacy Questionnaire 6
 
-## Continuous variables
+### Continuous variables
 
 
 ```r
@@ -563,9 +595,11 @@ se6 %>%
 
 
 
-  type      variable    missing    complete     n     mean     sd     median    q25    q75    min    max 
----------  ----------  ---------  ----------  -----  ------  ------  --------  -----  -----  -----  -----
- numeric      SE6         18         142       160    6.93    2.25     7.5       5      9      1     10  
+Table: Whole cohort
+
+type      variable    missing   complete     n   mean     sd   median   q25   q75   min   max
+--------  ---------  --------  ---------  ----  -----  -----  -------  ----  ----  ----  ----
+numeric   SE6              18        142   160   6.93   2.25      7.5     5     9     1    10
 
 ```r
 se6 %>% 
@@ -573,17 +607,19 @@ se6 %>%
     group_by(Study_site) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By study site',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type      Study_site    variable    missing    complete    n     mean     sd     median    q25    q75    min    max 
----------  ------------  ----------  ---------  ----------  ----  ------  ------  --------  -----  -----  -----  -----
- numeric        R1          SE6         12          35       47    6.4     2.24      7        5      8      1     10  
- numeric        R2          SE6          0          49       49    6.16    2.32      6        5      8      1     10  
- numeric        U1          SE6          6          41       47    8.54    1.43      9        8     10      4     10  
- numeric        U2          SE6          0          17       17    6.35    1.8       6        5      8      2      9  
+Table: By study site
+
+type      Study_site   variable    missing   complete    n   mean     sd   median   q25   q75   min   max
+--------  -----------  ---------  --------  ---------  ---  -----  -----  -------  ----  ----  ----  ----
+numeric   R1           SE6              12         35   47    6.4   2.24        7     5     8     1    10
+numeric   R2           SE6               0         49   49   6.16   2.32        6     5     8     1    10
+numeric   U1           SE6               6         41   47   8.54   1.43        9     8    10     4    10
+numeric   U2           SE6               0         17   17   6.35    1.8        6     5     8     2     9
 
 ```r
 se6 %>% 
@@ -591,15 +627,17 @@ se6 %>%
     group_by(Sex) %>% 
     skim_to_wide(.) %>% 
     kable(., caption = 'By sex',
-          align = 'llrrrrrrrrrr')
+          align = 'lllrrrrrrrrrr')
 ```
 
 
 
-  type       Sex      variable    missing    complete    n     mean     sd     median    q25    q75     min    max 
----------  --------  ----------  ---------  ----------  ----  ------  ------  --------  -----  ------  -----  -----
- numeric    female      SE6          5          92       97    6.9     2.31      8        5      9       1     10  
- numeric     male       SE6         13          50       63    6.98    2.16      7        6     8.75     1     10  
+Table: By sex
+
+type      Sex      variable    missing   complete    n   mean     sd   median   q25    q75   min   max
+--------  -------  ---------  --------  ---------  ---  -----  -----  -------  ----  -----  ----  ----
+numeric   female   SE6               5         92   97    6.9   2.31        8     5      9     1    10
+numeric   male     SE6              13         50   63   6.98   2.16        7     6   8.75     1    10
 
 ----
 
@@ -622,9 +660,10 @@ se6 %>%
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] bindrcpp_0.2.2  skimr_1.0.4     magrittr_1.5    forcats_0.3.0  
-##  [5] stringr_1.3.1   dplyr_0.7.8     purrr_0.3.0     readr_1.3.1    
-##  [9] tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0   tidyverse_1.2.1
+##  [1] bindrcpp_0.2.2  knitr_1.21      skimr_1.0.4     magrittr_1.5   
+##  [5] forcats_0.3.0   stringr_1.3.1   dplyr_0.7.8     purrr_0.3.0    
+##  [9] readr_1.3.1     tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0  
+## [13] tidyverse_1.2.1
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] tidyselect_0.2.5 xfun_0.4         haven_2.0.0      lattice_0.20-38 
@@ -632,11 +671,11 @@ se6 %>%
 ##  [9] rlang_0.3.1      pillar_1.3.1     glue_1.3.0       withr_2.1.2.9000
 ## [13] modelr_0.1.2     readxl_1.2.0     bindr_0.1.1      plyr_1.8.4      
 ## [17] munsell_0.5.0    gtable_0.2.0     cellranger_1.1.0 rvest_0.3.2     
-## [21] evaluate_0.12    knitr_1.21       highr_0.7        broom_0.5.1     
-## [25] Rcpp_1.0.0       scales_1.0.0     backports_1.1.3  jsonlite_1.6    
-## [29] hms_0.4.2        digest_0.6.18    stringi_1.2.4    grid_3.5.2      
-## [33] cli_1.0.1        tools_3.5.2      lazyeval_0.2.1   crayon_1.3.4    
-## [37] pkgconfig_2.0.2  xml2_1.2.0       lubridate_1.7.4  assertthat_0.2.0
-## [41] rmarkdown_1.11   httr_1.4.0       rstudioapi_0.9.0 R6_2.3.0        
-## [45] nlme_3.1-137     compiler_3.5.2
+## [21] evaluate_0.12    highr_0.7        broom_0.5.1      Rcpp_1.0.0      
+## [25] scales_1.0.0     backports_1.1.3  jsonlite_1.6     hms_0.4.2       
+## [29] digest_0.6.18    stringi_1.2.4    grid_3.5.2       cli_1.0.1       
+## [33] tools_3.5.2      lazyeval_0.2.1   crayon_1.3.4     pkgconfig_2.0.2 
+## [37] xml2_1.2.0       lubridate_1.7.4  assertthat_0.2.0 rmarkdown_1.11  
+## [41] httr_1.4.0       rstudioapi_0.9.0 R6_2.3.0         nlme_3.1-137    
+## [45] compiler_3.5.2
 ```

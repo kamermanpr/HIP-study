@@ -2,7 +2,7 @@
 title: "Supplement 3"
 subtitle: "Exploratory analysis of predictors of study dropout by week 8"
 author: "Peter Kamerman and Tory Madden"
-date: "30 January 2019"
+date: "31 January 2019"
 ---
 
 
@@ -191,9 +191,8 @@ _(no stratification by study site)_
 ```r
 demo %>% group_by(income_stability) %>%
     summarise(count = n()) %>% 
-    knitr::kable(.,
-                 caption = 'Access to stable income',
-                 col.names = c('', 'Count'))
+    kable(., caption = 'Access to stable income',
+          col.names = c('', 'Count'))
 ```
 
 
@@ -227,12 +226,12 @@ mosaicplot(employ,
 
 ```r
 # Fishers exact test
-knitr::kable(tidy(fisher.test(employ)),
-             caption = 'Association between income stability and data completeness',
-             col.names = c('Estimate', 'p-value', 
-                           'Lower 95% CI', 'Upper 95% CI',
-                           'Method', 'Alternative'),
-             digits = 3)
+kable(tidy(fisher.test(employ)),
+      caption = 'Association between income stability and data completeness',
+      col.names = c('Estimate', 'p-value', 
+                    'Lower 95% CI', 'Upper 95% CI',
+                    'Method', 'Alternative'),
+      digits = 3)
 ```
 
 
@@ -255,9 +254,8 @@ _(no stratification by study site)_
 ```r
 bdi %>% group_by(bdi_category) %>%
     summarise(count = n()) %>% 
-    knitr::kable(.,
-                 caption = 'BDI severity category',
-                 col.names = c('', 'Count'))
+    kable(., caption = 'BDI severity category',
+          col.names = c('', 'Count'))
 ```
 
 
@@ -353,8 +351,8 @@ oddR <- tibble('Item' = names(exp(coef(model))[-1]),
                'Lower 95% CI' = round(ci[1:3], 3),
                'Upper 95% CI' = round(ci[4:6], 3))
 
-knitr::kable(oddR,
-             caption = 'Odds ratio of regression coefficients')
+kable(oddR,
+      caption = 'Odds ratio of regression coefficients')
 ```
 
 
@@ -379,9 +377,8 @@ _(no stratification by study site)_
 ```r
 demo %>% group_by(Group) %>%
     summarise(count = n()) %>% 
-    knitr::kable(.,
-                 caption = 'Study group allocation',
-                 col.names = c('', 'Count'))
+    kable(., caption = 'Study group allocation',
+          col.names = c('', 'Count'))
 ```
 
 
@@ -414,12 +411,12 @@ mosaicplot(group,
 
 ```r
 # Fishers exact test
-knitr::kable(tidy(fisher.test(group)),
-             caption = 'Association between study group allocation and data completeness',
-             col.names = c('Estimate', 'p-value', 
-                           'Lower 95% CI', 'Upper 95% CI',
-                           'Method', 'Alternative'),
-             digits = 3)
+kable(tidy(fisher.test(group)),
+      caption = 'Association between study group allocation and data completeness',
+      col.names = c('Estimate', 'p-value', 
+                    'Lower 95% CI', 'Upper 95% CI',
+                    'Method', 'Alternative'),
+      digits = 3)
 ```
 
 
@@ -442,9 +439,8 @@ _(no stratification by study site)_
 ```r
 demo %>% group_by(Sex) %>%
     summarise(count = n()) %>% 
-    knitr::kable(.,
-                 caption = 'Sex',
-                 col.names = c('', 'Count'))
+    kable(., caption = 'Sex',
+          col.names = c('', 'Count'))
 ```
 
 
@@ -477,12 +473,12 @@ mosaicplot(sex,
 
 ```r
 # Fishers exact test
-knitr::kable(tidy(fisher.test(sex)),
-             caption = 'Association between sex and data completeness',
-             col.names = c('Estimate', 'p-value', 
-                           'Lower 95% CI', 'Upper 95% CI',
-                           'Method', 'Alternative'),
-             digits = 3)
+kable(tidy(fisher.test(sex)),
+      caption = 'Association between sex and data completeness',
+      col.names = c('Estimate', 'p-value', 
+                    'Lower 95% CI', 'Upper 95% CI',
+                    'Method', 'Alternative'),
+      digits = 3)
 ```
 
 
