@@ -1,10 +1,13 @@
-# Pain threshold
+# HIP study
 
 ## Bibliometric information
-(to be provided later)
+Parker R, Madden VJ, Devan D, Cameron S, Jackson K, Kamerman P, Reardon C, Wadley A. Barriers to implementing clinical trials on non-pharmacological treatments in developing countries – lessons learnt from addressing pain in HIV. _Pain Reports_ \[submitted 2019-01-31\]
 
 ## Abstract
-(to be added later)
+**Introduction:** Pain affects over half of people living with HIV/AIDS (LWHA) and pharmacological treatment has limited efficacy. Preliminary evidence supports non-pharmacological interventions.  We previously piloted a multimodal intervention in amaXhosa women LWHA and chronic pain in South Africa with improvements seen in all outcomes, in both intervention and control groups.  
+**Method:** A multicentre, single-blind randomised controlled trial with 160 participants recruited was conducted  to determine whether the multimodal peer-led intervention reduced pain in different populations of both male and female South Africans LWHA. Participants were followed up at Weeks 4, 8, 12, 24 and 48 to evaluate effects on the primary outcome of pain, and on depression, self-efficacy and health-related quality of life.  
+**Results:** We were unable to assess the efficacy of the intervention due to a 58% loss to follow up (LTFU). Secondary analysis of the LTFU found that sociocultural factors were not predictive of LTFU. Depression, however, did associate with LTFU, with greater severity of depressive symptoms predicting LTFU at week 8 (p=0.01).  
+**Discussion:** We were unable to evaluate the effectiveness of the intervention due to the high LTFU and the risk of retention bias.  The different sociocultural context in South Africa may warrant a different approach to interventions for pain in HIV compared to resource-rich countries, including a concurrent strategy to address barriers to health care service delivery. We suggest that assessment of pain and depression need to occur simultaneously in those with pain in HIV. We suggest investigation of the effect of social inclusion on pain and depression. 
 
 ## Analysis outputs
 
@@ -44,7 +47,7 @@ Enter: `docker pull kamermanpr/docker-hip-study:v1.0.0`
 
 Enter: `docker run -d -p 8787:8787 -v </PATH>:/home/rstudio --name threshold -e USER=hip -e PASSWORD=study kamermanpr/docker-hip-study:v1.0.0`
 
-Where `</PATH>` refers to the path to the HIP-study directory on your computer, which you either cloned from GitHub ([_kamermanpr/HIP-study_](https://github.com/kamermanpr/HIP-study.git), `git clone https://github.com/kamermanpr/HIP-study`), or downloaded and extracted from figshare ([DOI: 10.6084/m9.figshare.???????](https://doi.org/10.6084/m9.figshare.???????)).
+Where `</PATH>` refers to the path to the HIP-study directory on your computer, which you either cloned from GitHub ([_kamermanpr/HIP-study_](https://github.com/kamermanpr/HIP-study.git), `git clone https://github.com/kamermanpr/HIP-study`), or downloaded and extracted from figshare ([DOI: 10.6084/m9.figshare.7654637](https://doi.org/10.6084/m9.figshare.7654637)).
 
 If you use _git_ you can preconfigure the docker image with your _git_ credentials: `docker run -d -p 8787:8787 -v </PATH>:/home/rstudio --name hip -e USER=hip -e PASSWORD=study -e GIT_USER="<your name>" -e GIT_EMAIL="<your email address>" kamermanpr/docker-hip-study:v1.0.0`
 
