@@ -11,6 +11,7 @@ library(magrittr)
 library(tidyverse)
 library(broom)
 library(knitr)
+library(car)
 
 # Set ggplot2 theme
 theme_set(new = theme_bw(base_size = 14))
@@ -218,7 +219,7 @@ model <- glm(factor(coding) ~ bdi_category,
              family = binomial(link = "logit"))
 
 # Model summary
-car::Anova(model)
+Anova(model)
 
 # Model summary
 summary(model)
