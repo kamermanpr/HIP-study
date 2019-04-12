@@ -1,0 +1,169 @@
+---
+title: "Supplement 4"
+subtitle: "Analysis of the primary outcome"
+author: "Peter Kamerman and Tory Madden"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+---
+
+```{r setup, include = FALSE}
+# Load packages
+library(magrittr)
+library(tidyverse)
+library(coin)
+
+# Set ggplot2 theme
+theme_set(new = theme_bw(base_size = 14))
+
+# Set knitr options
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      fig.path = 'figures/supplement-04-primary-outcome/',
+                      fig.width = 9,
+                      fig.height = 7)
+```
+
+----
+
+The primary outcome was the reduction in pain score between week 0 (BL) and week 48 (Wk48). 
+
+The pain score was a composite measure of the mean of: pain at the assessment, and worst, least, and average pain in the last week (Pain Severity Score). 
+
+Some participants did not arrive for their baseline appointments and therefore did not have data at week 0. These missing data were interpolated using the study site average PSS. 
+
+Missing data at week 48 were interpolated using the baseline observation carried forward (BOCF) method.
+
+To simplify the analysis, no hedence was paid as to whether data were available at intermediate time points between week 0 and week 48. 
+
+----
+
+# Import and sort data
+
+```{r import_data}
+# Get BPI data
+## BPI
+bpi <- read_rds('data-cleaned/bpi.rds') %>% 
+    select(ID, contains('Pain')) 
+
+## Demographics
+demo <- read_rds('data-cleaned/demographics.rds') %>% 
+    select(ID, Study_site, Group)
+
+## Join BPI and demographics
+data <- demo %>% 
+    left_join(bpi)
+
+## Primary outcome
+primary <- data %>% 
+    select(-contains('present'))
+```
+
+----
+
+# Quick look
+
+```{r quick_look}
+glimpse(primary)
+```
+
+----
+
+# Data processing and analysis
+
+```{r clean_data}
+# Calculate Pain Severity Score (PSS) for weeks 0 (BL) and 48 (Wk48)
+BL48 <- primary %>% 
+    gather(key = 'Time',
+           value = 'NRS',
+           - ID, -Study_site, -Group) %>% 
+    separate(col = Time, 
+             into = c('Pain', 'Period'),
+             sep = '\\.') %>% 
+    group_by(ID, Study_site, Group, Period) %>% 
+    nest() %>% 
+    mutate(PPS = map(.x = data,
+                     ~ summarise(.x, Mean = mean(NRS, na.rm = TRUE)))) %>% 
+    select(-data) %>% 
+    unnest() %>% 
+    filter(Period %in% c('BL', 'Wk48')) %>% 
+    mutate(Mean = ifelse(is.nan(Mean),
+                         yes = NA,
+                          no = Mean))
+
+# Missing baseline data
+BL48[is.na(BL48$Mean) & BL48$Period == 'BL', ]
+
+# Number of participants with missing baselines
+nrow(BL48[is.na(BL48$Mean) & BL48$Period == 'BL', ])
+
+# Calculate baseline mean for study sites R1 and U1 (sites with missing data)
+R1 <- mean(BL48$Mean[!is.na(BL48$Mean) & 
+                         BL48$Study_site == 'R1' &
+                         BL48$Period == 'BL'])
+
+U1 <- mean(BL48$Mean[!is.na(BL48$Mean) & 
+                         BL48$Study_site == 'U1' &
+                         BL48$Period == 'BL'])
+
+# Substitute missing baselines with Study_site means
+BL48 %<>% 
+    mutate(Mean = ifelse(is.na(Mean) & Study_site == 'R1',
+                         yes = R1,
+                         no = Mean),
+           Mean = ifelse(is.na(Mean) & Study_site == 'U1',
+                         yes = U1,
+                         no = Mean))
+
+# Spread data
+BL48_wide <- BL48 %>%
+    spread(key = Period,
+           value = Mean)
+    
+# Number with missing Wk48 data
+nrow(BL48_wide[is.na(BL48_wide$Wk48), ])
+
+# Carry baseline forward
+BL48_wide %<>%
+    mutate(Wk48 = ifelse(is.na(Wk48),
+                         yes = BL,
+                         no = Wk48))
+
+# Quick plot
+BL48_wide %>% 
+    gather(key = Period,
+           value = NRS,
+           BL, Wk48) %>% 
+    ggplot(data = .) +
+    aes(x = Period, 
+        y = NRS) +
+    geom_boxplot() +
+    geom_point(position = position_jitter(height = 0, width = 0.3)) +
+    labs(title = 'NRS at week 0 (BL) 48 (Wk48)')
+
+# Calculate change from baseline to Wk48
+BL48_wide %<>%
+    mutate(Delta = Wk48 - BL)
+
+# Compare the P and T groups
+## Quick plot
+ggplot(data = BL48_wide) +
+    aes(x = Group, 
+        y = Delta) +
+    geom_boxplot() +
+    geom_point(position = position_jitter(height = 0, width = 0.3)) +
+    labs(title = 'Change in NRS from week 0 (BL) to 48 (Wk48)',
+         y = 'Change in NRS')
+
+## Statistical test
+independence_test(Delta ~ factor(Group), 
+                  data = BL48_wide,
+                  distribution = approximate(nresample = 100000))
+```
+
+----
+
+# Session information
+
+```{r session_info, echo = FALSE}
+sessionInfo()
+```
