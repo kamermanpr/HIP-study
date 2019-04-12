@@ -35,6 +35,8 @@ Missing data at week 48 were interpolated using the baseline observation carried
 
 To simplify the analysis, no hedence was paid as to whether data were available at intermediate time points between week 0 and week 48. 
 
+Statistical significance was assessed using a permutation test that tested the independence of the T and the P groups. The conditional null distribution of the test statistic was calculated using Monte Carlo resampling (n = 100000).
+
 ----
 
 # Import and sort data
