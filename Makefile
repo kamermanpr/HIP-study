@@ -17,9 +17,12 @@ DATA = 	data-cleaned/bpi.csv data-cleaned/bpi.rds \
 3S = 	outputs/supplement-03-dropout-predictors.html \
 		outputs/supplement-03-dropout-predictors.md
 
+4S = 	outputs/supplement-04-primary-outcome.html \
+		outputs/supplement-04-primary-outcome.md
+
 .PHONY: all
 
-all: 	$(DATA) $(1S) $(2S) $(3S)
+all: 	$(DATA) $(1S) $(2S) $(3S) $(4S)
 
 # Clean
 clean: 
@@ -36,7 +39,6 @@ outputs/supplement-01-summary-statistics.html outputs/supplement-01-summary-stat
 supplement-01-summary-statistics.Rmd \
 data-cleaned/demographics.rds \
 data-cleaned/bpi.rds \
-data-cleaned/bdi.rds \
 data-cleaned/eq5d.rds \
 data-cleaned/se6.rds
 	Rscript -e "rmarkdown::render('$<', output_dir = 'outputs/')"
@@ -51,7 +53,14 @@ data-cleaned/bpi.rds
 outputs/supplement-03-dropout-predictors.html outputs/supplement-03-dropout-predictors.md: \
 supplement-03-dropout-predictors.Rmd \
 data-cleaned/demographics.rds \
-data-cleaned/bpi.rds \
-data-cleaned/bdi.rds
+data-cleaned/bpi.rds 
 	Rscript -e "rmarkdown::render('$<', output_dir = 'outputs/')"
 	mv figures/supplement-03-dropout-predictors outputs/figures/
+
+outputs/supplement-04-primary-outcome.html outputs/supplement-04-primary-outcome.md: \
+supplement-04-primary-outcome.Rmd \
+data-cleaned/demographics.rds \
+data-cleaned/bpi.rds 
+	Rscript -e "rmarkdown::render('$<', output_dir = 'outputs/')"
+	mv figures/supplement-04-primary-outcome outputs/figures/
+
