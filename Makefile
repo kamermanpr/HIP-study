@@ -54,7 +54,7 @@ data-cleaned/bdi.rds
 	mv figures/supplement-03-dropout-predictors outputs/figures/
 	
 outputs/supplement-04-primary-outcome.pdf: \
-outputs/supplement-04-primary-outcome.Rmd \
+supplement-04-primary-outcome.Rmd \
 data-cleaned/demographics.rds \
 data-cleaned/bdi.rds
 	Rscript -e "rmarkdown::render('$<', output_dir = 'outputs/')"
