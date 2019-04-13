@@ -14,6 +14,10 @@ library(coin)
 # Set ggplot2 theme
 theme_set(new = theme_bw(base_size = 14))
 
+# Palette
+pal <- c('#0072B2', '#D55E00')
+pal2 <- c('#CC79A7', '#009E73')
+
 # Set knitr options
 knitr::opts_chunk$set(warning = FALSE,
                       message = FALSE,
@@ -25,17 +29,13 @@ knitr::opts_chunk$set(warning = FALSE,
 
 ----
 
-The primary outcome was the reduction in pain score between week 0 (BL) and week 48 (Wk48). 
+The primary outcome was the reduction in pain severity score (PSS) between week 0 (BL) and week 48 (Wk48). The PSS is a composite measure of the mean of: pain at the assessment, and worst, least, and average pain in the last week. 
 
-The pain score was a composite measure of the mean of: pain at the assessment, and worst, least, and average pain in the last week (Pain Severity Score). 
+The baseline observation carried forward (BOCF) analysis used data from week 0 to interpolate missing week 48 data. Some participants did not arrive for their week 0 appointment and therefore did not have data at baseline. These missing data were interpolated using the week 0 study site average PSS. No heed was paid to whether data were available at intermediate time points between week 0 and week 48.
 
-Some participants did not arrive for their baseline appointments and therefore did not have data at week 0. These missing data were interpolated using the study site average PSS. 
+The per protocol (PP) analysis included all individuals with complete data (i.e., no interpolation required).
 
-Missing data at week 48 were interpolated using the baseline observation carried forward (BOCF) method.
-
-To simplify the analysis, no hedence was paid as to whether data were available at intermediate time points between week 0 and week 48. 
-
-Statistical significance was assessed using a permutation test that tested the independence of the T and the P groups. The conditional null distribution of the test statistic was calculated using Monte Carlo resampling (n = 100000).
+Statistical significance was assessed using a permutation test that tested the independence of the therapeutic relationship only group (T, control) and the P groups (positive-living programme and therapeutic relationship). The conditional null distribution of the test statistic was calculated using Monte Carlo resampling (n = 100000).
 
 ----
 
@@ -70,11 +70,11 @@ glimpse(primary)
 
 ----
 
-# Data processing and analysis
+# BOCF data processing and analysis
 
-```{r clean_data}
+```{r bocf}
 # Calculate Pain Severity Score (PSS) for weeks 0 (BL) and 48 (Wk48)
-BL48 <- primary %>% 
+BOCF <- primary %>% 
     gather(key = 'Time',
            value = 'NRS',
            - ID, -Study_site, -Group) %>% 
@@ -93,22 +93,22 @@ BL48 <- primary %>%
                           no = Mean))
 
 # Missing baseline data
-BL48[is.na(BL48$Mean) & BL48$Period == 'BL', ]
+BOCF[is.na(BOCF$Mean) & BOCF$Period == 'BL', ]
 
 # Number of participants with missing baselines
-nrow(BL48[is.na(BL48$Mean) & BL48$Period == 'BL', ])
+nrow(BOCF[is.na(BOCF$Mean) & BOCF$Period == 'BL', ])
 
 # Calculate baseline mean for study sites R1 and U1 (sites with missing data)
-R1 <- mean(BL48$Mean[!is.na(BL48$Mean) & 
-                         BL48$Study_site == 'R1' &
-                         BL48$Period == 'BL'])
+R1 <- mean(BOCF$Mean[!is.na(BOCF$Mean) & 
+                         BOCF$Study_site == 'R1' &
+                         BOCF$Period == 'BL'])
 
-U1 <- mean(BL48$Mean[!is.na(BL48$Mean) & 
-                         BL48$Study_site == 'U1' &
-                         BL48$Period == 'BL'])
+U1 <- mean(BOCF$Mean[!is.na(BOCF$Mean) & 
+                         BOCF$Study_site == 'U1' &
+                         BOCF$Period == 'BL'])
 
 # Substitute missing baselines with Study_site means
-BL48 %<>% 
+BOCF %<>% 
     mutate(Mean = ifelse(is.na(Mean) & Study_site == 'R1',
                          yes = R1,
                          no = Mean),
@@ -117,48 +117,219 @@ BL48 %<>%
                          no = Mean))
 
 # Spread data
-BL48_wide <- BL48 %>%
+BOCF_wide <- BOCF %>%
     spread(key = Period,
            value = Mean)
-    
-# Number with missing Wk48 data
-nrow(BL48_wide[is.na(BL48_wide$Wk48), ])
 
-# Carry baseline forward
-BL48_wide %<>%
+# Number of participants
+BOCF_wide %>% 
+    summarise(Count = n())
+
+# Number with missing data at week 48
+BOCF_wide %>% 
+    filter(is.na(Wk48)) %>% 
+    summarise(Count = n())
+
+# Number with missing data at week 48 (by intervention)
+BOCF_wide %>% 
+    filter(is.na(Wk48)) %>% 
+    group_by(Group) %>% 
+    summarise(Count = n())
+
+# Create BOCF dataframe
+BOCF_wide %<>%
     mutate(Wk48 = ifelse(is.na(Wk48),
                          yes = BL,
                          no = Wk48))
 
-# Quick plot
-BL48_wide %>% 
+# Plot of BOCF NRS data at weeks 0 and 48 (by intervention)
+BOCF_wide %>% 
     gather(key = Period,
            value = NRS,
            BL, Wk48) %>% 
     ggplot(data = .) +
     aes(x = Period, 
-        y = NRS) +
-    geom_boxplot() +
-    geom_point(position = position_jitter(height = 0, width = 0.3)) +
-    labs(title = 'NRS at week 0 (BL) 48 (Wk48)')
+        y = NRS,
+        colour = Group,
+        fill = Group) +
+    geom_boxplot(alpha = 0.6) +
+    geom_point(position = position_jitterdodge(jitter.height = 0,
+                                               jitter.width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF',
+               size = 2) +
+    labs(title = 'BOCF: NRS at week 0 and week 48',
+         subtitle = 'P: Positive-living programme and therapeutic relationship\nT: Therapeutic relationship only',
+         x = 'Week') +
+    scale_fill_manual(values = pal) +
+    scale_colour_manual(values = pal) +
+    scale_x_discrete(labels = c(0, 48))
 
-# Calculate change from baseline to Wk48
-BL48_wide %<>%
+# Calculate change from baseline to Wk48 
+BOCF_wide %<>%
     mutate(Delta = Wk48 - BL)
 
 # Compare the P and T groups
-## Quick plot
-ggplot(data = BL48_wide) +
+## Plot of BOCF change in NRS between week 0 and 48 (by intervention)
+ggplot(data = BOCF_wide) +
     aes(x = Group, 
-        y = Delta) +
-    geom_boxplot() +
-    geom_point(position = position_jitter(height = 0, width = 0.3)) +
-    labs(title = 'Change in NRS from week 0 (BL) to 48 (Wk48)',
-         y = 'Change in NRS')
+        y = Delta,
+        fill = Group,
+        colour = Group) +
+    geom_boxplot(alpha = 0.6) +
+    geom_point(position = position_jitterdodge(jitter.height = 0, 
+                                               jitter.width = 0.4),
+               shape = 21,
+               size = 2,
+               fill = '#FFFFFF') +
+    geom_hline(yintercept = 0, 
+               linetype = 2) +
+    labs(title = 'BOCF: Change in NRS from week 0 to week 48',
+         subtitle = 'P: Positive-living programme and therapeutic relationship\nT: Therapeutic relationship only',
+         y = 'Change in NRS') +
+    scale_fill_manual(values = pal) +
+    scale_colour_manual(values = pal)
+
+# Slope plot of individual responses
+BOCF_wide %>% 
+    mutate(Change = ifelse(Delta < 0,
+                           yes = 'Decreased',
+                           no = 'Increased')) %>% 
+    ggplot(data = .) +
+    aes(colour = Change) +
+    geom_segment(aes(x = 1, xend = 2,
+                     y = BL, yend = Wk48)) +
+    scale_x_continuous(breaks = c(1, 2),
+                       labels = c(1, 48)) +
+    scale_colour_manual(values = pal2) +
+    labs(title = "BOCF: Individuals' changes in NRS from week 0 to week 48",
+         subtitle = 'P: Positive-living programme and therapeutic relationship\nT: Therapeutic relationship only',
+         x = 'Week',
+         y = 'Change in NRS') +
+    facet_wrap(~ Group)
 
 ## Statistical test
 independence_test(Delta ~ factor(Group), 
-                  data = BL48_wide,
+                  data = BOCF_wide,
+                  distribution = approximate(nresample = 100000))
+```
+
+----
+
+# Per protcol data processing and analysis
+
+```{r pp}
+# Calculate Pain Severity Score (PSS) for weeks 0 (BL) and 48 (Wk48)
+PP_wide <- primary %>% 
+    gather(key = 'Time',
+           value = 'NRS',
+           - ID, -Study_site, -Group) %>% 
+    separate(col = Time, 
+             into = c('Pain', 'Period'),
+             sep = '\\.') %>% 
+    group_by(ID, Study_site, Group, Period) %>% 
+    nest() %>% 
+    mutate(PPS = map(.x = data,
+                     ~ summarise(.x, Mean = mean(NRS, na.rm = TRUE)))) %>% 
+    select(-data) %>% 
+    unnest() %>% 
+    mutate(Mean = ifelse(is.nan(Mean),
+                         yes = NA,
+                          no = Mean)) %>% 
+    mutate(Period = case_when(
+        Period == 'BL' ~ 'T00',
+        Period == 'Wk4' ~ 'T04',
+        Period == 'Wk8' ~ 'T08',
+        Period == 'Wk12' ~ 'T12',
+        Period == 'Wk24' ~ 'T24',
+        Period == 'Wk48' ~ 'T48'
+    )) %>% 
+    spread(key = Period, 
+           value = Mean) 
+
+# PP cohort
+PP_wide %<>%
+    filter(complete.cases(.))
+
+# Number of participants with complete data
+PP_wide %>% 
+    summarise(Count = n())
+
+# Number of participants with complete data (by intervention)
+PP_wide %>% 
+    group_by(Group) %>% 
+    summarise(Count = n())
+
+
+# Plot of BOCF NRS data at weeks 0 and 48 (by intervention)
+PP_wide %>% 
+    gather(key = Period,
+           value = NRS,
+           -ID, -Study_site, -Group) %>% 
+    ggplot(data = .) +
+    aes(x = Period, 
+        y = NRS,
+        colour = Group,
+        fill = Group) +
+    geom_boxplot(alpha = 0.6) +
+    geom_point(position = position_jitterdodge(jitter.height = 0,
+                                               jitter.width = 0.3),
+               shape = 21,
+               fill = '#FFFFFF',
+               size = 2) +
+    labs(title = 'PP: NRS at weeks 0 through to 48',
+         subtitle = 'P: Positive-living programme and therapeutic relationship\nT: Therapeutic relationship only',
+         x = 'Week') +
+    scale_fill_manual(values = pal) +
+    scale_colour_manual(values = pal) +
+    scale_x_discrete(labels = c(0, 4, 8, 12, 24, 48))
+
+# Calculate change from baseline to Wk48 
+PP_wide %<>%
+    mutate(Delta = T48 - T00)
+
+# Compare the P and T groups
+## Plot of BOCF change in NRS between week 0 and 48 (by intervention)
+ggplot(data = PP_wide) +
+    aes(x = Group, 
+        y = Delta,
+        fill = Group,
+        colour = Group) +
+    geom_boxplot(alpha = 0.6) +
+    geom_point(position = position_jitterdodge(jitter.height = 0, 
+                                               jitter.width = 0.4),
+               shape = 21,
+               size = 2,
+               fill = '#FFFFFF') +
+    geom_hline(yintercept = 0, 
+               linetype = 2) +
+    labs(title = 'PP: Change in NRS from week 0 to week 48',
+         subtitle = 'P: Positive-living programme and therapeutic relationship\nT: Therapeutic relationship only',
+         y = 'Change in NRS') +
+    scale_fill_manual(values = pal) +
+    scale_colour_manual(values = pal)
+
+# Slope plot of individual responses
+PP_wide %>% 
+    mutate(Change = ifelse(Delta < 0,
+                           yes = 'Decreased',
+                           no = 'Increased')) %>% 
+    ggplot(data = .) +
+    aes(colour = Change) +
+    geom_segment(aes(x = 1, xend = 2,
+                     y = T00, yend = T48)) +
+    scale_x_continuous(breaks = c(1, 2),
+                       labels = c(1, 48)) +
+    scale_colour_manual(values = pal2) +
+    labs(title = "PP: Individuals' changes in NRS from week 0 to week 48",
+         subtitle = 'P: Positive-living programme and therapeutic relationship\nT: Therapeutic relationship only',
+         x = 'Week',
+         y = 'Change in NRS') +
+    facet_wrap(~ Group)
+
+## Statistical test
+independence_test(Delta ~ factor(Group), 
+                  data = PP_wide,
                   distribution = approximate(nresample = 100000))
 ```
 
