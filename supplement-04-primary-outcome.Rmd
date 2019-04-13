@@ -37,6 +37,8 @@ The per protocol (PP) analysis included all individuals with complete data (i.e.
 
 Statistical significance was assessed using a permutation test that tested the independence of the therapeutic relationship only group (T, control) and the P groups (positive-living programme and therapeutic relationship). The conditional null distribution of the test statistic was calculated using Monte Carlo resampling (n = 100000).
 
+Dosage was calculated as the median number of assessments attended. 
+
 ----
 
 # Import and sort data
@@ -331,6 +333,63 @@ PP_wide %>%
 independence_test(Delta ~ factor(Group), 
                   data = PP_wide,
                   distribution = approximate(nresample = 100000))
+```
+
+----
+
+# Treatment dosage
+
+```{r dose}
+dose <- primary %>% 
+    gather(key = 'Time',
+           value = 'NRS',
+           - ID, -Study_site, -Group) %>% 
+    separate(col = Time, 
+             into = c('Pain', 'Period'),
+             sep = '\\.') %>% 
+    group_by(ID, Study_site, Group, Period) %>% 
+    nest() %>% 
+    mutate(PPS = map(.x = data,
+                     ~ summarise(.x, Mean = mean(NRS, na.rm = TRUE)))) %>% 
+    select(-data) %>% 
+    unnest() %>% 
+    mutate(Mean = ifelse(is.nan(Mean),
+                         yes = NA,
+                          no = Mean)) %>% 
+    mutate(Period = case_when(
+        Period == 'BL' ~ 'T00',
+        Period == 'Wk4' ~ 'T04',
+        Period == 'Wk8' ~ 'T08',
+        Period == 'Wk12' ~ 'T12',
+        Period == 'Wk24' ~ 'T24',
+        Period == 'Wk48' ~ 'T48'
+    ))
+
+# Calculate dose per individual
+dose %<>% 
+    mutate(Mean = ifelse(is.na(Mean),
+                         yes = 0,
+                         no = 1)) %>% 
+    group_by(Group, Study_site, ID) %>% 
+    summarise(Count = sum(Mean))
+
+# Calculate summary stat for dose
+dose %>% 
+    ungroup() %>% 
+    summarise(Median = median(Count),
+              q25 = quantile(Count, probs = 0.25),
+              a75 = quantile(Count, probs = 0.75),
+              min = min(Count),
+              mx = max(Count))
+
+# Calculate summary stat for dose (by intervention)
+dose %>% 
+    group_by(Group) %>% 
+    summarise(Median = median(Count),
+              q25 = quantile(Count, probs = 0.25),
+              a75 = quantile(Count, probs = 0.75),
+              min = min(Count),
+              mx = max(Count))
 ```
 
 ----
