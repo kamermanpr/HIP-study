@@ -2,7 +2,7 @@
 title: "Supplement 4"
 subtitle: "Analysis of the primary outcome"
 author: "Peter Kamerman and Tory Madden"
-date: "13 April 2019"
+date: "07 May 2019"
 ---
 
 
@@ -17,7 +17,7 @@ The per protocol (PP) analysis included all individuals with complete data (i.e.
 
 Statistical significance was assessed using a permutation test that tested the independence of the therapeutic relationship only group (T, control) and the P groups (positive-living programme and therapeutic relationship). The conditional null distribution of the test statistic was calculated using Monte Carlo resampling (n = 100000).
 
-Dosage was calculated as the median number of assessments attended. 
+Dosage was calculated as the number of assessments attended, on average) by participants in each group, and the number of intervention sessions attended by participasnts in group P and the change in NRS. _Note that the latter analysis expludes site U1 because the data were inadvertantly destroyed._
 
 ----
 
@@ -34,9 +34,15 @@ bpi <- read_rds('data-cleaned/bpi.rds') %>%
 demo <- read_rds('data-cleaned/demographics.rds') %>% 
     select(ID, Study_site, Group)
 
+## Dosage
+dosage <- read_rds('data-cleaned/dosage.rds')
+
 ## Join BPI and demographics
 data <- demo %>% 
     left_join(bpi)
+
+## Add dosage data
+data %<>% left_join(dosage)
 
 ## Primary outcome
 primary <- data %>% 
@@ -54,7 +60,7 @@ glimpse(primary)
 
 ```
 ## Observations: 160
-## Variables: 27
+## Variables: 28
 ## $ ID                <chr> "J1", "J3", "J4", "J5", "J6", "J7", "J9", "J10…
 ## $ Study_site        <chr> "U1", "U1", "U1", "U1", "U1", "U1", "U1", "U1"…
 ## $ Group             <chr> "P", "T", "P", "P", "P", "T", "T", "T", "P", "…
@@ -82,6 +88,7 @@ glimpse(primary)
 ## $ Pain_now.Wk12     <int> NA, NA, 2, NA, NA, NA, 8, 5, 10, 3, 8, NA, NA,…
 ## $ Pain_now.Wk24     <int> NA, NA, 2, NA, NA, NA, 3, 8, NA, 3, NA, NA, NA…
 ## $ Pain_now.Wk48     <int> NA, NA, 4, NA, NA, NA, 3, 2, NA, 5, NA, NA, NA…
+## $ dosage            <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
 ```
 
 ----
@@ -306,7 +313,7 @@ independence_test(Delta ~ factor(Group),
 ## 	Approximative General Independence Test
 ## 
 ## data:  Delta by factor(Group) (P, T)
-## Z = -0.4306, p-value = 0.6647
+## Z = -0.4306, p-value = 0.6684
 ## alternative hypothesis: two.sided
 ```
 
@@ -332,7 +339,7 @@ PP_wide <- primary %>%
     unnest() %>% 
     mutate(Mean = ifelse(is.nan(Mean),
                          yes = NA,
-                          no = Mean)) %>% 
+                         no = Mean)) %>% 
     mutate(Period = case_when(
         Period == 'BL' ~ 'T00',
         Period == 'Wk4' ~ 'T04',
@@ -342,7 +349,8 @@ PP_wide <- primary %>%
         Period == 'Wk48' ~ 'T48'
     )) %>% 
     spread(key = Period, 
-           value = Mean) 
+           value = Mean) %>% 
+    select(- `<NA>`)
 
 # PP cohort
 PP_wide %<>%
@@ -465,13 +473,15 @@ independence_test(Delta ~ factor(Group),
 ## 	Approximative General Independence Test
 ## 
 ## data:  Delta by factor(Group) (P, T)
-## Z = -1.4904, p-value = 0.1378
+## Z = -1.4904, p-value = 0.1394
 ## alternative hypothesis: two.sided
 ```
 
 ----
 
-# Treatment dosage
+# Treatment dose
+
+## Number of assessments attended on average
 
 
 ```r
@@ -490,7 +500,7 @@ dose <- primary %>%
     unnest() %>% 
     mutate(Mean = ifelse(is.nan(Mean),
                          yes = NA,
-                          no = Mean)) %>% 
+                         no = Mean)) %>% 
     mutate(Period = case_when(
         Period == 'BL' ~ 'T00',
         Period == 'Wk4' ~ 'T04',
@@ -501,7 +511,7 @@ dose <- primary %>%
     ))
 
 # Calculate dose per individual
-dose %<>% 
+dose_b <- dose %>% 
     mutate(Mean = ifelse(is.na(Mean),
                          yes = 0,
                          no = 1)) %>% 
@@ -509,40 +519,79 @@ dose %<>%
     summarise(Count = sum(Mean))
 
 # Calculate summary stat for dose
-dose %>% 
+dose_b %>% 
     ungroup() %>% 
     summarise(Median = median(Count),
               q25 = quantile(Count, probs = 0.25),
               a75 = quantile(Count, probs = 0.75),
               min = min(Count),
-              mx = max(Count))
+              max = max(Count))
 ```
 
 ```
 ## # A tibble: 1 x 5
-##   Median   q25   a75   min    mx
+##   Median   q25   a75   min   max
 ##    <dbl> <dbl> <dbl> <dbl> <dbl>
-## 1      4     2     5     0     6
+## 1      5     3     6     0     7
 ```
 
 ```r
 # Calculate summary stat for dose (by intervention)
-dose %>% 
+dose_b %>% 
     group_by(Group) %>% 
     summarise(Median = median(Count),
               q25 = quantile(Count, probs = 0.25),
               a75 = quantile(Count, probs = 0.75),
               min = min(Count),
-              mx = max(Count))
+              max = max(Count))
 ```
 
 ```
 ## # A tibble: 2 x 6
-##   Group Median   q25   a75   min    mx
+##   Group Median   q25   a75   min   max
 ##   <chr>  <dbl> <dbl> <dbl> <dbl> <dbl>
-## 1 P          4     2     5     0     6
+## 1 P          5     3     6     1     7
 ## 2 T          4     2     5     0     6
 ```
+
+## Relationship between treatment session attendance (Group P) and outcome
+
+Excludes site U1 (data missing). 
+
+
+```r
+# Spread dose data
+dose %<>%  
+    spread(key = Period, 
+           value = Mean) 
+
+# Calculate change from baseline to Wk48, PL group only
+dose %<>%
+    mutate(Delta = T48 - T00) %>%
+    left_join(dosage) %>%
+    filter(Group == 'P') %>%
+    filter(Delta != 'NA') %>%
+    filter(dosage != 'NA') # filters out 5 participants all from J site
+
+# Plot of P group's change in NRS between week 0 and 48 
+# (by PL session attendance)
+ggplot(data = dose) +
+    aes(x = dosage, 
+        y = Delta) +
+    geom_point(shape = 21,
+               fill = '#FFFFFF',
+               size = 3) +
+    geom_hline(yintercept = 0, 
+               linetype = 2) +
+    geom_smooth(method = 'lm',
+                se = FALSE) +
+    labs(title = 'Change in NRS from week 0 to week 48\nby number of sessions attended',
+         subtitle = 'Positive-living group only',
+         y = 'Change in NRS',
+         x = 'Number of sessions attended')
+```
+
+<img src="figures/supplement-04-primary-outcome/dosage_attendance-1.png" style="display: block; margin: auto;" />
 
 ----
 
@@ -550,13 +599,13 @@ dose %>%
 
 
 ```
-## R version 3.5.3 (2019-03-11)
+## R version 3.6.0 (2019-04-26)
 ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
 ## Running under: macOS Mojave 10.14.4
 ## 
 ## Matrix products: default
-## BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
+## BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
 ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -565,30 +614,31 @@ dose %>%
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] coin_1.3-0      survival_2.43-3 forcats_0.4.0   stringr_1.4.0  
-##  [5] dplyr_0.8.0.1   purrr_0.3.2     readr_1.3.1     tidyr_0.8.3    
-##  [9] tibble_2.1.1    ggplot2_3.1.0   tidyverse_1.2.1 magrittr_1.5   
+##  [1] coin_1.3-0        survival_2.44-1.1 forcats_0.4.0    
+##  [4] stringr_1.4.0     dplyr_0.8.0.1     purrr_0.3.2      
+##  [7] readr_1.3.1       tidyr_0.8.3       tibble_2.1.1     
+## [10] ggplot2_3.1.1     tidyverse_1.2.1   magrittr_1.5     
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] Rcpp_1.0.1         lubridate_1.7.4    mvtnorm_1.0-10    
 ##  [4] lattice_0.20-38    zoo_1.8-5          assertthat_0.2.1  
 ##  [7] digest_0.6.18      utf8_1.1.4         R6_2.4.0          
-## [10] cellranger_1.1.0   plyr_1.8.4         backports_1.1.3   
-## [13] stats4_3.5.3       evaluate_0.13      httr_1.4.0        
-## [16] pillar_1.3.1       rlang_0.3.3        lazyeval_0.2.2    
+## [10] cellranger_1.1.0   plyr_1.8.4         backports_1.1.4   
+## [13] stats4_3.6.0       evaluate_0.13      httr_1.4.0        
+## [16] pillar_1.3.1       rlang_0.3.4        lazyeval_0.2.2    
 ## [19] multcomp_1.4-10    readxl_1.3.1       rstudioapi_0.10   
-## [22] Matrix_1.2-15      rmarkdown_1.12     labeling_0.3      
-## [25] splines_3.5.3      munsell_0.5.0      broom_0.5.1       
-## [28] compiler_3.5.3     modelr_0.1.4       xfun_0.6          
+## [22] Matrix_1.2-17      rmarkdown_1.12     labeling_0.3      
+## [25] splines_3.6.0      munsell_0.5.0      broom_0.5.2       
+## [28] compiler_3.6.0     modelr_0.1.4       xfun_0.6          
 ## [31] pkgconfig_2.0.2    libcoin_1.0-4      htmltools_0.3.6   
 ## [34] tidyselect_0.2.5   codetools_0.2-16   matrixStats_0.54.0
 ## [37] fansi_0.4.0        crayon_1.3.4       withr_2.1.2.9000  
-## [40] MASS_7.3-51.1      grid_3.5.3         nlme_3.1-137      
+## [40] MASS_7.3-51.4      grid_3.6.0         nlme_3.1-139      
 ## [43] jsonlite_1.6       gtable_0.3.0       scales_1.0.0      
 ## [46] cli_1.1.0          stringi_1.4.3      xml2_1.2.0        
-## [49] generics_0.0.2     sandwich_2.5-0     TH.data_1.0-10    
-## [52] tools_3.5.3        glue_1.3.1         hms_0.4.2         
-## [55] parallel_3.5.3     yaml_2.2.0         colorspace_1.4-1  
-## [58] rvest_0.3.2        knitr_1.22         haven_2.1.0       
+## [49] generics_0.0.2     sandwich_2.5-1     TH.data_1.0-10    
+## [52] tools_3.6.0        glue_1.3.1         hms_0.4.2         
+## [55] parallel_3.6.0     yaml_2.2.0         colorspace_1.4-1  
+## [58] rvest_0.3.3        knitr_1.22         haven_2.1.0       
 ## [61] modeltools_0.2-22
 ```

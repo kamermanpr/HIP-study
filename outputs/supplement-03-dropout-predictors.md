@@ -2,7 +2,7 @@
 title: "Supplement 3"
 subtitle: "Exploratory analysis of predictors of study dropout by week 8"
 author: "Peter Kamerman and Tory Madden"
-date: "31 January 2019"
+date: "07 May 2019"
 ---
 
 
@@ -201,9 +201,9 @@ Table: Access to stable income
 
                          Count
 ----------------------  ------
+NA                           3
 Stable income               59
 Unstable or no income       98
-NA                           3
 
 ### Null hypothesis significance testing (NHST)
 
@@ -296,7 +296,7 @@ model <- glm(factor(coding) ~ bdi_category,
              family = binomial(link = "logit"))
 
 # Model summary
-car::Anova(model)
+Anova(model)
 ```
 
 ```
@@ -654,44 +654,43 @@ ggsave(filename = 'figures/figure-2_greyscale.pdf',
 
 
 ```
-## R version 3.5.2 (2018-12-20)
+## R version 3.6.0 (2019-04-26)
 ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-## Running under: macOS Mojave 10.14.2
+## Running under: macOS Mojave 10.14.4
 ## 
 ## Matrix products: default
-## BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
+## BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
-## [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 ## 
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] bindrcpp_0.2.2  knitr_1.21      broom_0.5.1     forcats_0.3.0  
-##  [5] stringr_1.3.1   dplyr_0.7.8     purrr_0.3.0     readr_1.3.1    
-##  [9] tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0   tidyverse_1.2.1
-## [13] magrittr_1.5   
+##  [1] car_3.0-2       carData_3.0-2   knitr_1.22      broom_0.5.2    
+##  [5] forcats_0.4.0   stringr_1.4.0   dplyr_0.8.0.1   purrr_0.3.2    
+##  [9] readr_1.3.1     tidyr_0.8.3     tibble_2.1.1    ggplot2_3.1.1  
+## [13] tidyverse_1.2.1 magrittr_1.5   
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_0.2.5  xfun_0.4          haven_2.0.0      
-##  [4] lattice_0.20-38   carData_3.0-2     colorspace_1.4-0 
-##  [7] generics_0.0.2    htmltools_0.3.6   yaml_2.2.0       
-## [10] utf8_1.1.4        rlang_0.3.1       pillar_1.3.1     
-## [13] foreign_0.8-71    glue_1.3.0        withr_2.1.2.9000 
-## [16] modelr_0.1.2      readxl_1.2.0      bindr_0.1.1      
-## [19] plyr_1.8.4        munsell_0.5.0     gtable_0.2.0     
-## [22] cellranger_1.1.0  zip_1.0.0         rvest_0.3.2      
-## [25] evaluate_0.12     labeling_0.3      rio_0.5.16       
-## [28] curl_3.3          fansi_0.4.0       highr_0.7        
-## [31] Rcpp_1.0.0        scales_1.0.0      backports_1.1.3  
-## [34] jsonlite_1.6      abind_1.4-5       hms_0.4.2        
-## [37] digest_0.6.18     openxlsx_4.1.0    stringi_1.2.4    
-## [40] grid_3.5.2        cli_1.0.1         tools_3.5.2      
-## [43] lazyeval_0.2.1    car_3.0-2         crayon_1.3.4     
-## [46] pkgconfig_2.0.2   MASS_7.3-51.1     data.table_1.12.0
-## [49] xml2_1.2.0        lubridate_1.7.4   assertthat_0.2.0 
-## [52] rmarkdown_1.11    httr_1.4.0        rstudioapi_0.9.0 
-## [55] R6_2.3.0          nlme_3.1-137      compiler_3.5.2
+##  [1] tidyselect_0.2.5  xfun_0.6          haven_2.1.0      
+##  [4] lattice_0.20-38   colorspace_1.4-1  generics_0.0.2   
+##  [7] htmltools_0.3.6   yaml_2.2.0        utf8_1.1.4       
+## [10] rlang_0.3.4       pillar_1.3.1      foreign_0.8-71   
+## [13] glue_1.3.1        withr_2.1.2.9000  modelr_0.1.4     
+## [16] readxl_1.3.1      plyr_1.8.4        munsell_0.5.0    
+## [19] gtable_0.3.0      cellranger_1.1.0  zip_2.0.1        
+## [22] rvest_0.3.3       evaluate_0.13     labeling_0.3     
+## [25] rio_0.5.16        curl_3.3          fansi_0.4.0      
+## [28] highr_0.8         Rcpp_1.0.1        scales_1.0.0     
+## [31] backports_1.1.4   jsonlite_1.6      abind_1.4-5      
+## [34] hms_0.4.2         digest_0.6.18     openxlsx_4.1.0   
+## [37] stringi_1.4.3     grid_3.6.0        cli_1.1.0        
+## [40] tools_3.6.0       lazyeval_0.2.2    crayon_1.3.4     
+## [43] pkgconfig_2.0.2   MASS_7.3-51.4     data.table_1.12.2
+## [46] xml2_1.2.0        lubridate_1.7.4   assertthat_0.2.1 
+## [49] rmarkdown_1.12    httr_1.4.0        rstudioapi_0.10  
+## [52] R6_2.4.0          nlme_3.1-139      compiler_3.6.0
 ```

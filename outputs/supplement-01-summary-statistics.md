@@ -2,7 +2,7 @@
 title: "Supplement 1"
 subtitle: "Summary statistics for baseline variables"
 author: "Peter Kamerman and Tory Madden"
-date: "Last updated: 31 January 2019"
+date: "Last updated: 07 May 2019"
 ---
 
 
@@ -645,37 +645,35 @@ numeric   male     SE6              13         50   63   6.98   2.16        7   
 
 
 ```
-## R version 3.5.2 (2018-12-20)
+## R version 3.6.0 (2019-04-26)
 ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-## Running under: macOS Mojave 10.14.2
+## Running under: macOS Mojave 10.14.4
 ## 
 ## Matrix products: default
-## BLAS: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRblas.0.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/3.5/Resources/lib/libRlapack.dylib
+## BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
-## [1] en_GB.UTF-8/en_GB.UTF-8/en_GB.UTF-8/C/en_GB.UTF-8/en_GB.UTF-8
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 ## 
 ## attached base packages:
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] bindrcpp_0.2.2  knitr_1.21      skimr_1.0.4     magrittr_1.5   
-##  [5] forcats_0.3.0   stringr_1.3.1   dplyr_0.7.8     purrr_0.3.0    
-##  [9] readr_1.3.1     tidyr_0.8.2     tibble_2.0.1    ggplot2_3.1.0  
-## [13] tidyverse_1.2.1
+##  [1] knitr_1.22      skimr_1.0.5     magrittr_1.5    forcats_0.4.0  
+##  [5] stringr_1.4.0   dplyr_0.8.0.1   purrr_0.3.2     readr_1.3.1    
+##  [9] tidyr_0.8.3     tibble_2.1.1    ggplot2_3.1.1   tidyverse_1.2.1
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_0.2.5 xfun_0.4         haven_2.0.0      lattice_0.20-38 
-##  [5] colorspace_1.4-0 generics_0.0.2   htmltools_0.3.6  yaml_2.2.0      
-##  [9] rlang_0.3.1      pillar_1.3.1     glue_1.3.0       withr_2.1.2.9000
-## [13] modelr_0.1.2     readxl_1.2.0     bindr_0.1.1      plyr_1.8.4      
-## [17] munsell_0.5.0    gtable_0.2.0     cellranger_1.1.0 rvest_0.3.2     
-## [21] evaluate_0.12    highr_0.7        broom_0.5.1      Rcpp_1.0.0      
-## [25] scales_1.0.0     backports_1.1.3  jsonlite_1.6     hms_0.4.2       
-## [29] digest_0.6.18    stringi_1.2.4    grid_3.5.2       cli_1.0.1       
-## [33] tools_3.5.2      lazyeval_0.2.1   crayon_1.3.4     pkgconfig_2.0.2 
-## [37] xml2_1.2.0       lubridate_1.7.4  assertthat_0.2.0 rmarkdown_1.11  
-## [41] httr_1.4.0       rstudioapi_0.9.0 R6_2.3.0         nlme_3.1-137    
-## [45] compiler_3.5.2
+##  [1] Rcpp_1.0.1       highr_0.8        cellranger_1.1.0 pillar_1.3.1    
+##  [5] compiler_3.6.0   plyr_1.8.4       tools_3.6.0      digest_0.6.18   
+##  [9] lubridate_1.7.4  jsonlite_1.6     evaluate_0.13    nlme_3.1-139    
+## [13] gtable_0.3.0     lattice_0.20-38  pkgconfig_2.0.2  rlang_0.3.4     
+## [17] cli_1.1.0        rstudioapi_0.10  yaml_2.2.0       haven_2.1.0     
+## [21] xfun_0.6         withr_2.1.2.9000 xml2_1.2.0       httr_1.4.0      
+## [25] hms_0.4.2        generics_0.0.2   grid_3.6.0       tidyselect_0.2.5
+## [29] glue_1.3.1       R6_2.4.0         readxl_1.3.1     rmarkdown_1.12  
+## [33] modelr_0.1.4     backports_1.1.4  scales_1.0.0     htmltools_0.3.6 
+## [37] rvest_0.3.3      assertthat_0.2.1 colorspace_1.4-1 stringi_1.4.3   
+## [41] lazyeval_0.2.2   munsell_0.5.0    broom_0.5.2      crayon_1.3.4
 ```
