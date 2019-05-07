@@ -38,15 +38,15 @@ group_e <- c('J2', 'J8', 'J13', 'J14', 'J15', 'J16', 'J20', 'J21', 'J25',
 demographics <- read_excel(path = 'data-original/demographics.xlsx', 
                            sheet = "demographics") %>%
     # Fix weird import columns names
-    rename(DOD_Day = '..7',
+    rename(DOD_Day = '...7',
            DOD_Month = 'DOD',
-           DOD_Year = '..9') %>% 
+           DOD_Year = '...9') %>% 
     # Remove empty rows 
     filter(!is.na(Nr)) %>%
     # Convert '9999' missing to <NA>
-    mutate_all(funs(ifelse(. == '9999',
-                           yes = NA,
-                           no = .))) %>%
+    mutate_all(list(~ ifelse(. == '9999',
+                             yes = NA,
+                             no = .))) %>%
     # Remove unnessary columns
     select(-`CM Dx`, -DOB, -DOD_Day, -DOD_Month, -DOD_Year,
            -Duration, -Infections, -Language) %>%
@@ -283,9 +283,9 @@ BPI_clean <-
 
 # Convert '9999' missing to <NA>
 BPI_clean %<>%    
-    mutate_all(funs(ifelse(. == '9999',
-                           yes = NA,
-                           no = .)))
+    mutate_all(list(~ ifelse(. == '9999',
+                             yes = NA,
+                             no = .)))
 
 # Fix column classes
 BPI_clean %<>%
@@ -329,8 +329,8 @@ BDI_clean <- BDI_scores[-1,]
 
 # Fix column names and retain baseline scores only
 BDI_clean %<>%
-    rename(ID = '..1') %>% 
-    select(-starts_with('..')) %>% 
+    rename(ID = '...1') %>% 
+    select(-starts_with('...')) %>% 
     setNames(c('ID', 'Sadness.BL', 'Pessimism.BL', 'Past_failures.BL', 
         'Loss_of_pleasure.BL', 'Guilty_feelings.BL', 'Punishment_feelings.BL',
         'Self_dislike.BL', 'Self_critical.BL', 'Suicidal.BL', 'Crying.BL',
@@ -341,9 +341,9 @@ BDI_clean %<>%
 
 # Convert '9999' missing to <NA>
 BDI_clean %<>%    
-    mutate_all(funs(ifelse(. == '9999',
-                           yes = NA,
-                           no = .)))
+    mutate_all(list(~ ifelse(. == '9999',
+                             yes = NA,
+                             no = .)))
 
 # Remove Group E participants
 BDI_clean %<>%
@@ -395,16 +395,16 @@ EQ5D_clean <- EQ5D[-1,]
 
 # Fix column names and retain baseline scores only
 EQ5D_clean %<>%
-    rename(ID = '..1') %>% 
-    select(-starts_with('..')) %>% 
+    rename(ID = '...1') %>% 
+    select(-starts_with('...')) %>% 
     setNames(c('ID', 'Mobility.BL', 'Self_care.BL', 'Usual_activities.BL',
                'Pain.BL', 'Anxiety_and_depression.BL', 'State_of_health.BL'))
 
 # Convert '9999' missing to <NA>
 EQ5D_clean %<>%    
-    mutate_all(funs(ifelse(. == '9999',
-                           yes = NA,
-                           no = .)))
+    mutate_all(list(~ ifelse(. == '9999',
+                             yes = NA,
+                             no = .)))
 
 # Remove Group E participants
 EQ5D_clean %<>% 
@@ -446,17 +446,17 @@ SE6_clean <- SE6_scores[-1,]
 
 # Fix column names and retain baseline scores only
 SE6_clean %<>%
-    rename(ID = '..1') %>% 
-    select(-starts_with('..')) %>% 
+    rename(ID = '...1') %>% 
+    select(-starts_with('...')) %>% 
     setNames(c('ID', 'Fatigue.BL', 'Physical_discomfort.BL', 
                'Emotional_distress.BL', 'Other_symptoms.BL', 'Tasks.BL',
                'Non_drug.BL'))
 
 # Convert '9999' missing to <NA>
 SE6_clean <- SE6_clean %>%    
-    mutate_all(funs(ifelse(. == '9999',
-                           yes = NA,
-                           no = .)))
+    mutate_all(list(~ ifelse(. == '9999',
+                             yes = NA,
+                             no = .)))
 
 # Remove Group E participants
 SE6_clean %<>%
@@ -476,6 +476,21 @@ write_rds(x = SE6_clean,
 
 write_csv(x = SE6_clean,
           path = 'data-cleaned/se6.csv')
+
+############################################################
+#                                                          #
+#           Dosage: Number of sessions attended            #
+#                                                          #
+############################################################
+# Import data
+dosage <- read_excel(path = 'data-original/dosage.xlsx')
+
+# Save outputs
+write_rds(x = dosage, 
+          path = 'data-cleaned/dosage.rds')
+
+write_csv(x = dosage,
+          path = 'data-cleaned/dosage.csv')
 
 ############################################################
 #                                                          #

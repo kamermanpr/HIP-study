@@ -37,7 +37,7 @@ The per protocol (PP) analysis included all individuals with complete data (i.e.
 
 Statistical significance was assessed using a permutation test that tested the independence of the therapeutic relationship only group (T, control) and the P groups (positive-living programme and therapeutic relationship). The conditional null distribution of the test statistic was calculated using Monte Carlo resampling (n = 100000).
 
-Dosage was calculated as the median number of assessments attended. 
+Dosage was calculated as the number of assessments attended, on average) by participants in each group, and the number of intervention sessions attended by participasnts in group P and the change in NRS. _Note that the latter analysis expludes site U1 because the data were inadvertantly destroyed._
 
 ----
 
@@ -53,9 +53,15 @@ bpi <- read_rds('data-cleaned/bpi.rds') %>%
 demo <- read_rds('data-cleaned/demographics.rds') %>% 
     select(ID, Study_site, Group)
 
+## Dosage
+dosage <- read_rds('data-cleaned/dosage.rds')
+
 ## Join BPI and demographics
 data <- demo %>% 
     left_join(bpi)
+
+## Add dosage data
+data %<>% left_join(dosage)
 
 ## Primary outcome
 primary <- data %>% 
@@ -237,7 +243,7 @@ PP_wide <- primary %>%
     unnest() %>% 
     mutate(Mean = ifelse(is.nan(Mean),
                          yes = NA,
-                          no = Mean)) %>% 
+                         no = Mean)) %>% 
     mutate(Period = case_when(
         Period == 'BL' ~ 'T00',
         Period == 'Wk4' ~ 'T04',
@@ -247,7 +253,8 @@ PP_wide <- primary %>%
         Period == 'Wk48' ~ 'T48'
     )) %>% 
     spread(key = Period, 
-           value = Mean) 
+           value = Mean) %>% 
+    select(- `<NA>`)
 
 # PP cohort
 PP_wide %<>%
@@ -337,7 +344,9 @@ independence_test(Delta ~ factor(Group),
 
 ----
 
-# Treatment dosage
+# Treatment dose
+
+## Number of assessments attended on average
 
 ```{r dose}
 dose <- primary %>% 
@@ -355,7 +364,7 @@ dose <- primary %>%
     unnest() %>% 
     mutate(Mean = ifelse(is.nan(Mean),
                          yes = NA,
-                          no = Mean)) %>% 
+                         no = Mean)) %>% 
     mutate(Period = case_when(
         Period == 'BL' ~ 'T00',
         Period == 'Wk4' ~ 'T04',
@@ -366,7 +375,7 @@ dose <- primary %>%
     ))
 
 # Calculate dose per individual
-dose %<>% 
+dose_b <- dose %>% 
     mutate(Mean = ifelse(is.na(Mean),
                          yes = 0,
                          no = 1)) %>% 
@@ -374,22 +383,58 @@ dose %<>%
     summarise(Count = sum(Mean))
 
 # Calculate summary stat for dose
-dose %>% 
+dose_b %>% 
     ungroup() %>% 
     summarise(Median = median(Count),
               q25 = quantile(Count, probs = 0.25),
               a75 = quantile(Count, probs = 0.75),
               min = min(Count),
-              mx = max(Count))
+              max = max(Count))
 
 # Calculate summary stat for dose (by intervention)
-dose %>% 
+dose_b %>% 
     group_by(Group) %>% 
     summarise(Median = median(Count),
               q25 = quantile(Count, probs = 0.25),
               a75 = quantile(Count, probs = 0.75),
               min = min(Count),
-              mx = max(Count))
+              max = max(Count))
+```
+
+## Relationship between treatment session attendance (Group P) and outcome
+
+Excludes site U1 (data missing). 
+
+```{r dosage_attendance}
+# Spread dose data
+dose %<>%  
+    spread(key = Period, 
+           value = Mean) 
+
+# Calculate change from baseline to Wk48, PL group only
+dose %<>%
+    mutate(Delta = T48 - T00) %>%
+    left_join(dosage) %>%
+    filter(Group == 'P') %>%
+    filter(Delta != 'NA') %>%
+    filter(dosage != 'NA') # filters out 5 participants all from J site
+
+# Plot of P group's change in NRS between week 0 and 48 
+# (by PL session attendance)
+ggplot(data = dose) +
+    aes(x = dosage, 
+        y = Delta) +
+    geom_point(shape = 21,
+               fill = '#FFFFFF',
+               size = 3) +
+    geom_hline(yintercept = 0, 
+               linetype = 2) +
+    geom_smooth(method = 'lm',
+                se = FALSE) +
+    labs(title = 'Change in NRS from week 0 to week 48\nby number of sessions attended',
+         subtitle = 'Positive-living group only',
+         y = 'Change in NRS',
+         x = 'Number of sessions attended')
 ```
 
 ----
