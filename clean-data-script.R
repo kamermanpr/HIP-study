@@ -479,6 +479,21 @@ write_csv(x = SE6_clean,
 
 ############################################################
 #                                                          #
+#           Dosage: Number of sessions attended            #
+#                                                          #
+############################################################
+# Import data
+dosage <- read_excel(path = 'data-original/dosage.xlsx')
+
+# Save outputs
+write_rds(x = dosage, 
+          path = 'data-cleaned/dosage.rds')
+
+write_csv(x = dosage,
+          path = 'data-cleaned/dosage.csv')
+
+############################################################
+#                                                          #
 #                         Clean-up                         #
 #                                                          #
 ############################################################
